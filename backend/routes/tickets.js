@@ -33,7 +33,14 @@ const purchaseValidation = [
     .normalizeEmail()
     .withMessage("Valid attendee email is required"),
   body("paymentDetails.method")
-    .isIn(["credit_card", "debit_card", "paypal", "bank_transfer", "cash"])
+    .isIn([
+      "credit_card",
+      "debit_card",
+      "paypal",
+      "mpesa",
+      "bank_transfer",
+      "cash",
+    ])
     .withMessage("Valid payment method is required"),
 ];
 

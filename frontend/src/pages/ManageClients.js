@@ -5,7 +5,7 @@ import { adminAPI } from "../services/api";
 import "./ManageUsers.css";
 
 const ManageClients = () => {
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -29,46 +29,7 @@ const ManageClients = () => {
       setError("");
     } catch (error) {
       console.error("Error fetching clients:", error);
-      setError("Failed to load clients");
-      // Mock data for demo purposes
-      setClients([
-        {
-          _id: "1",
-          username: "client1",
-          email: "client1@example.com",
-          fullName: "Alice Johnson",
-          phone: "+1-555-1234",
-          isActive: true,
-          registeredAt: "2024-01-10T08:30:00Z",
-          lastLogin: "2024-01-25T14:20:00Z",
-          ticketsPurchased: 5,
-          totalSpent: 250.0,
-        },
-        {
-          _id: "2",
-          username: "client2",
-          email: "client2@example.com",
-          fullName: "Bob Smith",
-          phone: "+1-555-5678",
-          isActive: true,
-          registeredAt: "2024-01-12T16:45:00Z",
-          lastLogin: "2024-01-24T10:15:00Z",
-          ticketsPurchased: 2,
-          totalSpent: 120.0,
-        },
-        {
-          _id: "3",
-          username: "client3",
-          email: "client3@example.com",
-          fullName: "Carol Davis",
-          phone: "+1-555-9012",
-          isActive: false,
-          registeredAt: "2024-01-08T12:00:00Z",
-          lastLogin: "2024-01-15T09:30:00Z",
-          ticketsPurchased: 1,
-          totalSpent: 75.0,
-        },
-      ]);
+      setError("Failed to load clients. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }

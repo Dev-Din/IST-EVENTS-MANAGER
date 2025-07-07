@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../App";
 import EventCard from "../components/EventCard";
 import Loading from "../components/Loading";
 import Modal from "../components/Modal";
 import { eventsAPI } from "../services/api";
+import {
+  EVENT_CURRENCIES,
+  DEFAULT_EVENT_CURRENCY,
+} from "../utils/eastAfricanCountries";
 import "./ManageEvents.css";
 
 const ManageEvents = () => {
-  const { user, isAdmin } = useAuth();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -19,6 +21,7 @@ const ManageEvents = () => {
     date: "",
     location: "",
     charges: "",
+    currency: DEFAULT_EVENT_CURRENCY.code,
   });
 
   useEffect(() => {
@@ -47,6 +50,7 @@ const ManageEvents = () => {
       date: "",
       location: "",
       charges: "",
+      currency: DEFAULT_EVENT_CURRENCY.code,
     });
     setShowModal(true);
   };
@@ -59,6 +63,7 @@ const ManageEvents = () => {
       date: new Date(event.date).toISOString().slice(0, 16),
       location: event.location,
       charges: event.charges.toString(),
+      currency: event.currency || DEFAULT_EVENT_CURRENCY.code,
     });
     setShowModal(true);
   };
@@ -234,6 +239,25 @@ const ManageEvents = () => {
                 step="0.01"
                 placeholder="0.00"
               />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="currency">Currency *</label>
+              <select
+                id="currency"
+                name="currency"
+                value={formData.currency}
+                onChange={handleChange}
+                required
+              >
+                {EVENT_CURRENCIES.map((currency) => (
+                  <option key={currency.code} value={currency.code}>
+                    {currency.flag} {currency.name} ({currency.symbol})
+                    {currency.isDefault && " - Default"}
+                    {currency.isInternational && " - International"}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-actions">

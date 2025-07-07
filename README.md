@@ -1,10 +1,10 @@
-# 🎪 Event Organising System
+# 🎪 LegitEvents™
 
 A full-stack web application for managing events, ticket sales, and user administration. Built with React.js frontend and Node.js/Express backend with MongoDB database.
 
 ## 🌟 Overview
 
-This comprehensive event management platform allows organizations to create, manage, and sell tickets for events while providing different access levels for administrators and clients.
+LegitEvents is a comprehensive event management platform that allows organizations to create, manage, and sell tickets for events while providing different access levels for administrators and clients.
 
 ### 🎯 Key Features
 
@@ -58,7 +58,7 @@ This comprehensive event management platform allows organizations to create, man
 ## 📁 Project Structure
 
 ```
-Event Organising System/
+LegitEvents/
 ├── frontend/                    # React.js Frontend Application
 │   ├── public/
 │   │   ├── index.html          # HTML template
@@ -129,7 +129,7 @@ Event Organising System/
 
 ```bash
 git clone <repository-url>
-cd "Event Organising System"
+cd LegitEvents
 ```
 
 2. **Set up Backend**
@@ -195,23 +195,22 @@ npm start
 | **Sub-Admin**   | Limited admin access | Manage own events, view reports         |
 | **Client**      | Standard user access | Register, purchase tickets, view events |
 
-### Sample Accounts
+### System Administrator
 
-After running the seed script, you can use these accounts:
+After running the seed script, use the superadmin account to access the system:
 
 ```
-Super Admin:
-Email: superadmin@example.com
-Password: password123
+🔐 SUPERADMIN CREDENTIALS:
+Email: admin@legitevents.com
+Username: legitevents_admin
+Password: LE@dm1n2024$ecur3
+Phone: +254 700 123 456
+Country: Kenya (KE)
 
-Sub-Admin:
-Email: subadmin1@example.com
-Password: password123
-
-Client:
-Email: client1@example.com
-Password: password123
+⚠️  IMPORTANT: Change this password after first login!
 ```
+
+**Note:** Demo accounts have been removed for security. The superadmin can create sub-admins through the system interface, and users can register as clients naturally.
 
 ## 🌐 API Documentation
 
@@ -367,7 +366,7 @@ npm run eject      # Eject from Create React App
 ```env
 NODE_ENV=development
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/event_organiser
+MONGODB_URI=mongodb://localhost:27017/legitevents
 JWT_SECRET=your-super-secret-jwt-key
 JWT_EXPIRE=30d
 ```
@@ -457,4 +456,4 @@ For support, email support@example.com or create an issue in the repository.
 
 ---
 
-**Happy Event Organizing! 🎪✨**
+**Welcome to LegitEvents - Where Every Event Matters! 🎪✨**

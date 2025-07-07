@@ -7,9 +7,14 @@ const asyncHandler = require("../utils/asyncHandler");
 // @route   POST /api/tickets/purchase
 // @access  Private
 const purchaseTicket = asyncHandler(async (req, res, next) => {
+  // Debug log the request
+  console.log("=== PURCHASE TICKET REQUEST ===");
+  console.log("Request body:", JSON.stringify(req.body, null, 2));
+
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log("Validation errors:", errors.array());
     return res.status(400).json({
       success: false,
       message: "Validation failed",
@@ -53,6 +58,10 @@ const purchaseTicket = asyncHandler(async (req, res, next) => {
     });
   }
 
+  // Calculate total amount (including any processing fees)
+  const processingFee = 1.5; // Fixed processing fee [[memory:2513993]]
+  const totalAmount = event.charges * quantity + processingFee;
+
   // Create ticket
   const ticketData = {
     event: eventId,
@@ -60,11 +69,41 @@ const purchaseTicket = asyncHandler(async (req, res, next) => {
     attendee,
     quantity,
     unitPrice: event.charges,
-    paymentDetails,
+    totalAmount,
+    paymentDetails: {
+      ...paymentDetails,
+      currency: event.currency || "USD",
+      fees: {
+        processingFee,
+        serviceFee: 0,
+        taxes: 0,
+      },
+    },
     discounts: discounts || [],
+    validUntil: new Date(new Date(event.date).getTime() + 6 * 60 * 60 * 1000), // 6 hours after event
   };
 
-  const ticket = await Ticket.create(ticketData);
+  console.log(
+    "Creating ticket with data:",
+    JSON.stringify(ticketData, null, 2)
+  );
+
+  let ticket;
+  try {
+    ticket = await Ticket.create(ticketData);
+    console.log("Ticket created successfully:", ticket._id);
+
+    // Since this is a demo payment system, automatically confirm the ticket
+    await ticket.confirm();
+    console.log("Ticket confirmed successfully");
+  } catch (ticketError) {
+    console.error("Error creating ticket:", ticketError);
+    return res.status(400).json({
+      success: false,
+      message: "Failed to create ticket",
+      error: ticketError.message,
+    });
+  }
 
   // Update event available tickets
   await event.sellTickets(quantity);
@@ -94,7 +133,7 @@ const getUserTickets = asyncHandler(async (req, res, next) => {
   }
 
   const tickets = await Ticket.find(query)
-    .populate("event", "name date location status")
+    .populate("event", "name date location status charges currency")
     .sort({ createdAt: -1 })
     .skip(startIndex)
     .limit(limit);

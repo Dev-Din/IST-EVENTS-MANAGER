@@ -1,4 +1,8 @@
 const mongoose = require("mongoose");
+const {
+  EVENT_CURRENCIES,
+  DEFAULT_EVENT_CURRENCY,
+} = require("../utils/eastAfricanCountries");
 
 const EventSchema = new mongoose.Schema(
   {
@@ -33,7 +37,7 @@ const EventSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Event charges are required"],
       min: [0, "Event charges cannot be negative"],
-      max: [10000, "Event charges cannot exceed $10,000"],
+      max: [10000000, "Event charges cannot exceed 10,000,000"],
     },
     category: {
       type: String,
@@ -120,8 +124,13 @@ const EventSchema = new mongoose.Schema(
       specialRequirements: [String],
       accessibilityFeatures: [String],
     },
+    currency: {
+      type: String,
+      enum: EVENT_CURRENCIES.map((c) => c.code),
+      default: DEFAULT_EVENT_CURRENCY.code,
+      required: [true, "Currency is required"],
+    },
     pricing: {
-      currency: { type: String, default: "USD" },
       earlyBird: {
         price: Number,
         deadline: Date,

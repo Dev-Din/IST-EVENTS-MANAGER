@@ -76,8 +76,9 @@ function App() {
     logout,
     register,
     isAuthenticated: !!user,
-    isAdmin: user?.role === "superadmin",
-    isSubAdmin: user?.role === "subadmin",
+    isAdmin: user?.role === "super-admin",
+    isSuperAdmin: user?.role === "super-admin",
+    isSubAdmin: user?.role === "sub-admin",
     isClient: user?.role === "client",
   };
 

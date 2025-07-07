@@ -1,7 +1,7 @@
 {
-  "name": "event-organiser-frontend",
+  "name": "legitevents-frontend",
   "version": "1.0.0",
-  "description": "Event Organising System Frontend",
+  "description": "LegitEvents™ Frontend - Modern Event Management Platform",
   "private": true,
   "dependencies": {
     "react": "^18.2.0",

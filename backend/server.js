@@ -86,10 +86,10 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("combined"));
 }
 
-// Rate limiting
+// Rate limiting (increased for development)
 const limiter = rateLimit({
   windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000, // 15 minutes
-  max: process.env.RATE_LIMIT_MAX_REQUESTS || 100, // limit each IP to 100 requests per windowMs
+  max: process.env.RATE_LIMIT_MAX_REQUESTS || 1000, // increased from 100 to 1000 for development
   message: {
     success: false,
     message: "Too many requests from this IP, please try again later",

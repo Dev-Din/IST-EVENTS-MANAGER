@@ -29,10 +29,10 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response?.status === 401) {
-      // Unauthorized - redirect to login
-      window.location.href = "/login";
-    }
+    // Don't auto-redirect on 401 - let components handle authentication state
+    console.log(
+      `API Error: ${error.response?.status} - ${error.response?.statusText}`
+    );
     return Promise.reject(error);
   }
 );
@@ -54,21 +54,42 @@ export const eventsAPI = {
 };
 
 export const ticketsAPI = {
-  purchase: (eventId) => api.post(`/tickets/purchase/${eventId}`),
+  purchase: (purchaseData) => api.post("/tickets/purchase", purchaseData),
   getMyTickets: () => api.get("/tickets/my-tickets"),
 };
 
 export const adminAPI = {
   getSubAdmins: () => api.get("/admin/sub-admins"),
   createSubAdmin: (userData) => api.post("/admin/sub-admins", userData),
-  updateSubAdmin: (id, userData) =>
-    api.put(`/admin/sub-admins/${id}`, userData),
-  deleteSubAdmin: (id) => api.delete(`/admin/sub-admins/${id}`),
+  updateSubAdmin: (id, userData) => api.put(`/admin/users/${id}`, userData),
+  deleteSubAdmin: (id) => api.delete(`/admin/users/${id}`),
+  toggleSubAdminStatus: (id) => api.put(`/admin/users/${id}/toggle-status`),
   getClients: () => api.get("/admin/clients"),
+  toggleClientStatus: (id) => api.put(`/admin/users/${id}/toggle-status`),
   deleteClient: (id) => api.delete(`/admin/clients/${id}`),
-  getReports: (format) =>
-    api.get(`/admin/reports/${format}`, { responseType: "blob" }),
-  getDashboardStats: () => api.get("/admin/dashboard/stats"),
+  getReports: (params = {}) => {
+    const searchParams = new URLSearchParams();
+    if (params.startDate) searchParams.append("startDate", params.startDate);
+    if (params.endDate) searchParams.append("endDate", params.endDate);
+    if (params.type) searchParams.append("type", params.type);
+
+    const queryString = searchParams.toString();
+    return api.get(`/admin/reports${queryString ? `?${queryString}` : ""}`);
+  },
+  getSalesReport: (startDate, endDate) =>
+    api.get(
+      `/admin/reports?type=sales&startDate=${startDate}&endDate=${endDate}`
+    ),
+  getEventsReport: (startDate, endDate) =>
+    api.get(
+      `/admin/reports?type=events&startDate=${startDate}&endDate=${endDate}`
+    ),
+  exportData: (dataType, options = {}) => {
+    return api.post(`/admin/export/${dataType}`, options, {
+      responseType: "blob", // Important for file downloads
+    });
+  },
+  getDashboardStats: () => api.get("/admin/dashboard"),
 };
 
 export default api;

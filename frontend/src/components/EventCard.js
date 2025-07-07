@@ -1,6 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../App";
+import {
+  formatEventCurrency,
+  DEFAULT_EVENT_CURRENCY,
+} from "../utils/eastAfricanCountries";
 import "./EventCard.css";
 
 const EventCard = ({ event, onEdit, onDelete, showActions = false }) => {
@@ -17,11 +21,9 @@ const EventCard = ({ event, onEdit, onDelete, showActions = false }) => {
     return new Date(dateString).toLocaleDateString("en-US", options);
   };
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(price);
+  const formatPrice = (price, currency) => {
+    // Use event's currency or default to KES
+    return formatEventCurrency(price, currency || DEFAULT_EVENT_CURRENCY.code);
   };
 
   return (
@@ -62,7 +64,7 @@ const EventCard = ({ event, onEdit, onDelete, showActions = false }) => {
 
           <div className="info-item">
             <i className="fas fa-dollar-sign"></i>
-            <span>{formatPrice(event.charges)}</span>
+            <span>{formatPrice(event.charges, event.currency)}</span>
           </div>
         </div>
 

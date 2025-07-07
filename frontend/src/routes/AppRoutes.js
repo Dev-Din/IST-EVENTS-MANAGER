@@ -38,9 +38,9 @@ const PublicRoute = ({ children }) => {
 
   if (isAuthenticated) {
     // Redirect to appropriate dashboard based on role
-    if (user.role === "superadmin") {
+    if (user.role === "super-admin") {
       return <Navigate to="/admin/dashboard" replace />;
-    } else if (user.role === "subadmin") {
+    } else if (user.role === "sub-admin") {
       return <Navigate to="/subadmin/dashboard" replace />;
     } else {
       return <Navigate to="/" replace />;
@@ -98,7 +98,7 @@ export default function AppRoutes() {
       <Route
         path="/admin/dashboard"
         element={
-          <ProtectedRoute roles={["superadmin"]}>
+          <ProtectedRoute roles={["super-admin"]}>
             <AdminDashboard />
           </ProtectedRoute>
         }
@@ -106,7 +106,7 @@ export default function AppRoutes() {
       <Route
         path="/admin/events"
         element={
-          <ProtectedRoute roles={["superadmin"]}>
+          <ProtectedRoute roles={["super-admin"]}>
             <ManageEvents />
           </ProtectedRoute>
         }
@@ -114,7 +114,7 @@ export default function AppRoutes() {
       <Route
         path="/admin/sub-admins"
         element={
-          <ProtectedRoute roles={["superadmin"]}>
+          <ProtectedRoute roles={["super-admin"]}>
             <ManageSubAdmins />
           </ProtectedRoute>
         }
@@ -122,7 +122,7 @@ export default function AppRoutes() {
       <Route
         path="/admin/clients"
         element={
-          <ProtectedRoute roles={["superadmin"]}>
+          <ProtectedRoute roles={["super-admin"]}>
             <ManageClients />
           </ProtectedRoute>
         }
@@ -130,7 +130,7 @@ export default function AppRoutes() {
       <Route
         path="/admin/reports"
         element={
-          <ProtectedRoute roles={["superadmin"]}>
+          <ProtectedRoute roles={["super-admin"]}>
             <Reports />
           </ProtectedRoute>
         }
@@ -140,7 +140,7 @@ export default function AppRoutes() {
       <Route
         path="/subadmin/dashboard"
         element={
-          <ProtectedRoute roles={["subadmin"]}>
+          <ProtectedRoute roles={["sub-admin"]}>
             <SubAdminDashboard />
           </ProtectedRoute>
         }
@@ -148,7 +148,7 @@ export default function AppRoutes() {
       <Route
         path="/subadmin/events"
         element={
-          <ProtectedRoute roles={["subadmin"]}>
+          <ProtectedRoute roles={["sub-admin"]}>
             <ManageEvents />
           </ProtectedRoute>
         }

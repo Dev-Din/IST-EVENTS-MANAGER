@@ -9,12 +9,13 @@ dotenv.config();
 const User = require("../models/User");
 const Event = require("../models/Event");
 const Ticket = require("../models/Ticket");
+const { DEFAULT_EVENT_CURRENCY } = require("../utils/eastAfricanCountries");
 
 // Connect to database
 const connectDB = async () => {
   try {
     await mongoose.connect(
-      process.env.MONGODB_URI || "mongodb://localhost:27017/event_organiser"
+      process.env.MONGODB_URI || "mongodb://localhost:27017/legitevents"
     );
     console.log("MongoDB Connected for seeding");
   } catch (error) {
@@ -23,99 +24,48 @@ const connectDB = async () => {
   }
 };
 
-// Sample data
-const sampleUsers = [
-  {
-    username: "superadmin",
-    email: "superadmin@example.com",
-    password: "password123",
-    fullName: "Super Administrator",
-    phone: "+1234567890",
-    role: "super-admin",
-    isActive: true,
-    emailVerified: true,
-  },
-  {
-    username: "subadmin1",
-    email: "subadmin1@example.com",
-    password: "password123",
-    fullName: "John Smith",
-    phone: "+1234567891",
-    role: "sub-admin",
-    permissions: ["events", "tickets", "reports"],
-    isActive: true,
-    emailVerified: true,
-  },
-  {
-    username: "subadmin2",
-    email: "subadmin2@example.com",
-    password: "password123",
-    fullName: "Jane Doe",
-    phone: "+1234567892",
-    role: "sub-admin",
-    permissions: ["events", "tickets"],
-    isActive: true,
-    emailVerified: true,
-  },
-  {
-    username: "client1",
-    email: "client1@example.com",
-    password: "password123",
-    fullName: "Alice Johnson",
-    phone: "+1234567893",
-    role: "client",
-    isActive: true,
-    emailVerified: true,
-  },
-  {
-    username: "client2",
-    email: "client2@example.com",
-    password: "password123",
-    fullName: "Bob Wilson",
-    phone: "+1234567894",
-    role: "client",
-    isActive: true,
-    emailVerified: true,
-  },
-  {
-    username: "client3",
-    email: "client3@example.com",
-    password: "password123",
-    fullName: "Carol Brown",
-    phone: "+1234567895",
-    role: "client",
-    isActive: true,
-    emailVerified: true,
-  },
-];
+// Secure Superadmin Credential
+// ⚠️  IMPORTANT: Store these credentials securely!
+const SUPERADMIN_CREDENTIALS = {
+  username: "Legit Events Admin",
+  email: "admin@legitevents.com",
+  password: "LE@dm1n2024$ecur3", // Strong password for production
+  fullName: "LegitEvents System Administrator",
+  phone: "+254 700 123 456", // Kenya phone number format
+  country: "KE", // Kenya as default East African hub
+  role: "super-admin",
+  isActive: true,
+  emailVerified: true,
+};
 
 const sampleEvents = [
   {
-    name: "Tech Conference 2024",
+    name: "East African Tech Summit 2024",
     description:
-      "Join us for the biggest tech conference of the year featuring industry leaders and cutting-edge technologies.",
+      "Join us for the biggest tech conference in East Africa featuring industry leaders and cutting-edge technologies.",
     date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-    location: "San Francisco Convention Center, CA",
-    charges: 299,
+    location: "Kenyatta International Convention Centre, Nairobi",
+    charges: 15000,
+    currency: "KES",
     category: "conference",
     capacity: 500,
     status: "published",
     isPublic: true,
     isFeatured: true,
     organizer: {
-      name: "Tech Events Inc.",
-      email: "info@techevents.com",
-      phone: "+1-555-0123",
-      website: "https://techevents.com",
+      name: "East Africa Tech Events",
+      email: "info@eatechevents.com",
+      phone: "+254 700 123 001",
+      website: "https://eatechevents.com",
     },
     venue: {
-      name: "San Francisco Convention Center",
+      name: "Kenyatta International Convention Centre",
       address: {
-        street: "747 Howard St",
-        city: "San Francisco",
-        state: "CA",
-        zipCode: "94103",
-        country: "USA",
+        street: "Harambee Avenue",
+        city: "Nairobi",
+        state: "Nairobi County",
+        zipCode: "00100",
+        country: "Kenya",
       },
     },
     tags: ["technology", "conference", "networking", "innovation"],
@@ -125,72 +75,76 @@ const sampleEvents = [
     description:
       "Learn modern web development techniques with React, Node.js, and MongoDB in this hands-on workshop.",
     date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days from now
-    location: "Downtown Learning Center, New York",
-    charges: 199,
+    location: "iHub, Nairobi",
+    charges: 8000,
+    currency: "KES",
     category: "workshop",
     capacity: 50,
     status: "published",
     isPublic: true,
     organizer: {
-      name: "Code Academy",
-      email: "workshops@codeacademy.com",
-      phone: "+1-555-0124",
+      name: "Code Academy East Africa",
+      email: "workshops@codeacademyea.com",
+      phone: "+254 700 123 002",
     },
     tags: ["web development", "react", "nodejs", "mongodb"],
   },
   {
     name: "Digital Marketing Seminar",
     description:
-      "Discover the latest trends and strategies in digital marketing to grow your business.",
+      "Discover the latest trends and strategies in digital marketing to grow your business in East Africa.",
     date: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000), // 20 days from now
-    location: "Business Hub, Chicago",
-    charges: 149,
+    location: "Business Hub, Kampala",
+    charges: 150000,
+    currency: "UGX",
     category: "seminar",
     capacity: 100,
     status: "published",
     isPublic: true,
     organizer: {
-      name: "Marketing Masters",
-      email: "info@marketingmasters.com",
-      phone: "+1-555-0125",
+      name: "Marketing Masters East Africa",
+      email: "info@marketingmastersea.com",
+      phone: "+256 700 123 003",
     },
     tags: ["marketing", "digital", "business", "strategy"],
   },
   {
-    name: "Summer Music Festival",
+    name: "East African Music Festival",
     description:
-      "Three days of amazing music featuring top artists from around the world.",
+      "Three days of amazing music featuring top artists from across East Africa.",
     date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
-    location: "Central Park, New York",
-    charges: 89,
+    location: "Uhuru Park, Nairobi",
+    charges: 3500,
+    currency: "KES",
     category: "festival",
     capacity: 2000,
     status: "published",
     isPublic: true,
     isFeatured: true,
     organizer: {
-      name: "Festival Productions",
-      email: "info@festivalproductions.com",
-      phone: "+1-555-0126",
+      name: "East Africa Festival Productions",
+      email: "info@eafestivalproductions.com",
+      phone: "+254 700 123 004",
     },
     tags: ["music", "festival", "outdoor", "entertainment"],
   },
   {
-    name: "AI & Machine Learning Expo",
+    name: "AI & Machine Learning Expo East Africa",
     description:
-      "Explore the future of artificial intelligence and machine learning technologies.",
+      "Explore the future of artificial intelligence and machine learning technologies in East Africa.",
     date: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
-    location: "Los Angeles Convention Center, CA",
-    charges: 399,
+    location: "Julius Nyerere Convention Centre, Dar es Salaam",
+    charges: 200000,
+    currency: "TZS",
     category: "exhibition",
     capacity: 800,
     status: "published",
     isPublic: true,
     isFeatured: true,
     organizer: {
-      name: "AI Expo Group",
-      email: "info@aiexpo.com",
-      phone: "+1-555-0127",
+      name: "AI Expo East Africa",
+      email: "info@aiexpoea.com",
+      phone: "+255 700 123 005",
     },
     tags: [
       "artificial intelligence",
@@ -200,20 +154,21 @@ const sampleEvents = [
     ],
   },
   {
-    name: "Startup Networking Event",
+    name: "East African Startup Networking Event",
     description:
-      "Connect with fellow entrepreneurs, investors, and startup enthusiasts.",
+      "Connect with fellow entrepreneurs, investors, and startup enthusiasts across East Africa.",
     date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
-    location: "WeWork Space, Austin",
-    charges: 0, // Free event
+    location: "Kigali Convention Centre, Rwanda",
+    charges: 25000,
+    currency: "RWF",
     category: "networking",
     capacity: 80,
     status: "published",
     isPublic: true,
     organizer: {
-      name: "Startup Community Austin",
-      email: "events@startupaustin.com",
-      phone: "+1-555-0128",
+      name: "East Africa Startup Community",
+      email: "events@eastafricastartups.com",
+      phone: "+250 700 123 006",
     },
     tags: ["startup", "networking", "entrepreneurship", "investors"],
   },
@@ -231,36 +186,51 @@ const clearData = async () => {
   }
 };
 
-// Seed users
-const seedUsers = async () => {
+// Create superadmin user
+const createSuperAdmin = async () => {
   try {
-    const users = await User.insertMany(sampleUsers);
-    console.log(`${users.length} users created`);
-    return users;
+    console.log("Creating superadmin...");
+
+    // Check if superadmin already exists
+    const existingAdmin = await User.findOne({
+      $or: [
+        { email: SUPERADMIN_CREDENTIALS.email },
+        { username: SUPERADMIN_CREDENTIALS.username },
+      ],
+    });
+
+    if (existingAdmin) {
+      console.log("Superadmin already exists, skipping creation");
+      return existingAdmin;
+    }
+
+    const superAdmin = new User(SUPERADMIN_CREDENTIALS);
+    await superAdmin.save();
+    console.log(
+      `✓ Superadmin created: ${superAdmin.email} (${superAdmin._id})`
+    );
+
+    return superAdmin;
   } catch (error) {
-    console.error("Error seeding users:", error);
+    console.error("Error creating superadmin:", error);
     throw error;
   }
 };
 
-// Seed events
-const seedEvents = async (users) => {
+// Seed sample events (created by superadmin)
+const seedEvents = async (superAdmin) => {
   try {
-    // Assign events to sub-admins
-    const subAdmins = users.filter((user) => user.role === "sub-admin");
+    console.log("Creating sample events...");
 
-    const eventsWithCreators = sampleEvents.map((event, index) => {
-      const creator = subAdmins[index % subAdmins.length];
-      return {
-        ...event,
-        createdBy: creator._id,
-        lastModifiedBy: creator._id,
-        availableTickets: event.capacity,
-      };
-    });
+    const eventsWithCreator = sampleEvents.map((event) => ({
+      ...event,
+      createdBy: superAdmin._id,
+      lastModifiedBy: superAdmin._id,
+      availableTickets: event.capacity,
+    }));
 
-    const events = await Event.insertMany(eventsWithCreators);
-    console.log(`${events.length} events created`);
+    const events = await Event.insertMany(eventsWithCreator);
+    console.log(`✓ ${events.length} sample events created`);
     return events;
   } catch (error) {
     console.error("Error seeding events:", error);
@@ -268,108 +238,58 @@ const seedEvents = async (users) => {
   }
 };
 
-// Seed tickets
-const seedTickets = async (users, events) => {
-  try {
-    const clients = users.filter((user) => user.role === "client");
-    const sampleTickets = [];
-
-    // Create some sample ticket purchases
-    for (let i = 0; i < 15; i++) {
-      const randomEvent = events[Math.floor(Math.random() * events.length)];
-      const randomClient = clients[Math.floor(Math.random() * clients.length)];
-      const quantity = Math.floor(Math.random() * 3) + 1; // 1-3 tickets
-
-      // Skip if not enough tickets available
-      if (randomEvent.availableTickets < quantity) {
-        continue;
-      }
-
-      const timestamp = Date.now().toString(36);
-      const random = Math.random().toString(36).substr(2, 5);
-      const ticketNumber = `TKT-${timestamp}-${random}`.toUpperCase();
-      const crypto = require('crypto');
-      const qrCode = crypto.randomBytes(32).toString('hex');
-      const barcode = crypto.randomBytes(16).toString('hex');
-
-      const ticket = {
-        ticketNumber,
-        qrCode,
-        barcode,
-        event: randomEvent._id,
-        purchaser: randomClient._id,
-        attendee: {
-          fullName: randomClient.fullName,
-          email: randomClient.email,
-          phone: randomClient.phone,
-        },
-        quantity,
-        unitPrice: randomEvent.charges,
-        totalAmount: quantity * randomEvent.charges,
-        paymentDetails: {
-          method: ["credit_card", "debit_card", "paypal"][
-            Math.floor(Math.random() * 3)
-          ],
-          transactionId: `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`,
-          currency: "USD",
-        },
-        status: ["confirmed", "pending"][Math.floor(Math.random() * 2)],
-      };
-
-      sampleTickets.push(ticket);
-
-      // Update event available tickets
-      randomEvent.availableTickets -= quantity;
-      await randomEvent.save();
-    }
-
-    if (sampleTickets.length > 0) {
-      const tickets = await Ticket.insertMany(sampleTickets);
-      console.log(`${tickets.length} tickets created`);
-      return tickets;
-    } else {
-      console.log("No tickets created due to capacity constraints");
-      return [];
-    }
-  } catch (error) {
-    console.error("Error seeding tickets:", error);
-    throw error;
-  }
-};
+// No demo tickets will be created - users will purchase tickets naturally
 
 // Main seeding function
 const seedDatabase = async () => {
   try {
     await connectDB();
 
-    console.log("🌱 Starting database seeding...");
+    console.log("🌱 Starting LegitEvents database initialization...");
 
     // Clear existing data
     await clearData();
 
-    // Seed data in order
-    const users = await seedUsers();
-    const events = await seedEvents(users);
-    const tickets = await seedTickets(users, events);
+    // Create superadmin
+    const superAdmin = await createSuperAdmin();
 
-    console.log("\n✅ Database seeded successfully!");
-    console.log("\n👥 Sample accounts created:");
-    console.log("Super Admin: superadmin@example.com / password123");
-    console.log("Sub Admin 1: subadmin1@example.com / password123");
-    console.log("Sub Admin 2: subadmin2@example.com / password123");
-    console.log("Client 1: client1@example.com / password123");
-    console.log("Client 2: client2@example.com / password123");
-    console.log("Client 3: client3@example.com / password123");
+    // Create sample events
+    const events = await seedEvents(superAdmin);
 
-    console.log("\n📊 Data summary:");
-    console.log(`- Users: ${users.length}`);
-    console.log(`- Events: ${events.length}`);
-    console.log(`- Tickets: ${tickets.length}`);
+    // Verify data was saved
+    console.log("\n🔍 Verifying data...");
+    const userCount = await User.countDocuments();
+    const eventCount = await Event.countDocuments();
+    const ticketCount = await Ticket.countDocuments();
+
+    console.log(
+      `✓ Verified counts - Users: ${userCount}, Events: ${eventCount}, Tickets: ${ticketCount}`
+    );
+
+    console.log("\n✅ Database initialized successfully!");
+    console.log("\n🔐 SUPERADMIN CREDENTIALS - STORE THESE SECURELY:");
+    console.log("═".repeat(60));
+    console.log(`📧 Email: ${SUPERADMIN_CREDENTIALS.email}`);
+    console.log(`👤 Username: ${SUPERADMIN_CREDENTIALS.username}`);
+    console.log(`🔑 Password: ${SUPERADMIN_CREDENTIALS.password}`);
+    console.log("═".repeat(60));
+    console.log("⚠️  IMPORTANT: Change this password after first login!");
+
+    console.log("\n📊 System summary:");
+    console.log(`- Superadmin created: 1`);
+    console.log(`- Sample events: ${events.length}`);
+    console.log(`- Demo tickets: 0 (users will purchase naturally)`);
+    console.log(
+      "\n🚀 System ready! Superadmin can now login and create sub-admins."
+    );
   } catch (error) {
-    console.error("❌ Seeding failed:", error);
+    console.error("❌ Database initialization failed:", error);
+    console.error("Stack:", error.stack);
   } finally {
-    mongoose.connection.close();
-    console.log("\n🔐 Database connection closed");
+    console.log("\n🔐 Closing database connection...");
+    await mongoose.connection.close();
+    console.log("Database connection closed");
+    process.exit(0);
   }
 };
 

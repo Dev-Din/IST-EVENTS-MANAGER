@@ -38,6 +38,38 @@
   transform: scale(1.05);
 }
 
+.nav-logo-img {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  transition: var(--transition);
+  display: block;
+  margin-right: var(--spacing-sm);
+}
+
+.nav-logo-img:not([src]),
+.nav-logo-img[src=""],
+.nav-logo-img[src*="undefined"] {
+  display: none;
+}
+
+.nav-logo-text {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--primary-color);
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.nav-logo:hover .nav-logo-text {
+  color: var(--primary-hover);
+}
+
+/* Hide text when logo loads successfully */
+.nav-logo:has(.nav-logo-img:not([style*="display: none"])) .nav-logo-text {
+  margin-left: 0;
+}
+
 .nav-logo i {
   font-size: 1.5rem;
 }
@@ -266,10 +298,19 @@
 @media (max-width: 480px) {
   .nav-logo {
     font-size: var(--font-size-lg);
+    gap: var(--spacing-xs);
+  }
+
+  .nav-logo-img {
+    height: 32px;
+  }
+
+  .nav-logo-text {
+    font-size: var(--font-size-lg);
   }
 
   .nav-logo i {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
   }
 
   .user-info {

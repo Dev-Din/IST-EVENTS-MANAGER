@@ -9,7 +9,7 @@ const Login = () => {
   const { login } = useAuth();
 
   const [formData, setFormData] = useState({
-    email: "",
+    identifier: "",
     password: "",
   });
 
@@ -38,10 +38,10 @@ const Login = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
+    if (!formData.identifier.trim()) {
+      newErrors.identifier = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.identifier)) {
+      newErrors.identifier = "Email is invalid";
     }
 
     if (!formData.password) {
@@ -97,21 +97,23 @@ const Login = () => {
           )}
 
           <div className="form-group">
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="identifier">Email Address</label>
             <div className="input-group">
               <i className="fas fa-envelope"></i>
               <input
                 type="email"
-                id="email"
-                name="email"
-                value={formData.email}
+                id="identifier"
+                name="identifier"
+                value={formData.identifier}
                 onChange={handleChange}
                 placeholder="Enter your email"
-                className={errors.email ? "error" : ""}
+                className={errors.identifier ? "error" : ""}
                 disabled={loading}
               />
             </div>
-            {errors.email && <span className="error-text">{errors.email}</span>}
+            {errors.identifier && (
+              <span className="error-text">{errors.identifier}</span>
+            )}
           </div>
 
           <div className="form-group">
@@ -160,43 +162,6 @@ const Login = () => {
               Create one here
             </Link>
           </p>
-        </div>
-
-        {/* Demo Accounts Section */}
-        <div className="demo-accounts">
-          <h3>Demo Accounts</h3>
-          <div className="demo-buttons">
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() =>
-                setFormData({ email: "admin@demo.com", password: "admin123" })
-              }
-            >
-              Super Admin Demo
-            </button>
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() =>
-                setFormData({
-                  email: "subadmin@demo.com",
-                  password: "subadmin123",
-                })
-              }
-            >
-              Sub Admin Demo
-            </button>
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() =>
-                setFormData({ email: "client@demo.com", password: "client123" })
-              }
-            >
-              Client Demo
-            </button>
-          </div>
         </div>
       </div>
     </div>

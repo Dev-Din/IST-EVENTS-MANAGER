@@ -1,21 +1,83 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import { adminAPI } from "../services/api";
 import "./Reports.css";
 
 const Reports = () => {
-  const { user, isAdmin } = useAuth();
-  const [reports, setReports] = useState({
-    eventSummary: {},
-    ticketSales: {},
-    userActivity: {},
-    revenue: {},
+  const { isAdmin } = useAuth();
+  const [overviewData, setOverviewData] = useState({
+    summary: { totalRevenue: 0, totalTickets: 0 },
+    eventsByCategory: [],
+    topEvents: [],
   });
+  const [salesData, setSalesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedDateRange, setSelectedDateRange] = useState("30days");
-  const [selectedReportType, setSelectedReportType] = useState("overview");
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState("");
+  const [exportFormat, setExportFormat] = useState("csv");
+
+  // Convert frontend date range to actual dates
+  const getDateRange = (range) => {
+    const endDate = new Date();
+    const startDate = new Date();
+
+    switch (range) {
+      case "7days":
+        startDate.setDate(endDate.getDate() - 7);
+        break;
+      case "30days":
+        startDate.setDate(endDate.getDate() - 30);
+        break;
+      case "90days":
+        startDate.setDate(endDate.getDate() - 90);
+        break;
+      case "1year":
+        startDate.setFullYear(endDate.getFullYear() - 1);
+        break;
+      default:
+        startDate.setDate(endDate.getDate() - 30);
+    }
+
+    return {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    };
+  };
+
+  const fetchReports = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const { startDate, endDate } = getDateRange(selectedDateRange);
+
+      // Fetch overview and sales data in parallel
+      const [overviewResponse, salesResponse] = await Promise.all([
+        adminAPI.getReports({ startDate, endDate, type: "overview" }),
+        adminAPI.getSalesReport(startDate, endDate),
+      ]);
+
+      setOverviewData(
+        overviewResponse.data.data || {
+          summary: { totalRevenue: 0, totalTickets: 0 },
+          eventsByCategory: [],
+          topEvents: [],
+        }
+      );
+      setSalesData(salesResponse.data.data || []);
+    } catch (error) {
+      console.error("Error fetching reports:", error);
+      setError(
+        error.response?.data?.message ||
+          "Failed to load reports. Please check your connection and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDateRange]);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -24,78 +86,61 @@ const Reports = () => {
       return;
     }
     fetchReports();
-  }, [isAdmin, selectedDateRange]);
+  }, [isAdmin, fetchReports]);
 
-  const fetchReports = async () => {
+  const handleExportReport = (type) => {
+    setExportType(type);
+    setShowExportModal(true);
+  };
+
+  const handleDownloadReport = async () => {
     try {
-      setLoading(true);
-      const response = await adminAPI.getReports(selectedDateRange);
-      setReports(response.data.reports || {});
-      setError("");
-    } catch (error) {
-      console.error("Error fetching reports:", error);
-      setError("Failed to load reports");
-      // Mock data for demo purposes
-      setReports({
-        eventSummary: {
-          totalEvents: 15,
-          activeEvents: 8,
-          upcomingEvents: 5,
-          pastEvents: 10,
-          topEvents: [
-            { name: "Tech Conference 2024", tickets: 450, revenue: 22500 },
-            { name: "Music Festival", tickets: 320, revenue: 19200 },
-            { name: "Food & Wine Expo", tickets: 280, revenue: 14000 },
-          ],
-        },
-        ticketSales: {
-          totalTickets: 1250,
-          totalRevenue: 65700,
-          averageTicketPrice: 52.56,
-          salesByDate: [
-            { date: "2024-01-20", sales: 45 },
-            { date: "2024-01-21", sales: 67 },
-            { date: "2024-01-22", sales: 89 },
-            { date: "2024-01-23", sales: 112 },
-            { date: "2024-01-24", sales: 95 },
-          ],
-        },
-        userActivity: {
-          totalUsers: 892,
-          newUsers: 48,
-          activeUsers: 324,
-          userGrowth: 12.5,
-        },
-        revenue: {
-          totalRevenue: 65700,
-          monthlyGrowth: 18.3,
-          averageOrderValue: 87.5,
-          revenueByCategory: [
-            { category: "Conferences", amount: 35000 },
-            { category: "Entertainment", amount: 20000 },
-            { category: "Workshops", amount: 10700 },
-          ],
-        },
+      setShowExportModal(false);
+      const { startDate, endDate } = getDateRange(selectedDateRange);
+
+      const response = await adminAPI.exportData(exportType, {
+        startDate,
+        endDate,
+        format: exportFormat,
       });
-    } finally {
-      setLoading(false);
+
+      // Determine file extension and MIME type based on format
+      const fileExtension = exportFormat === "pdf" ? "pdf" : "csv";
+      const mimeType = exportFormat === "pdf" ? "application/pdf" : "text/csv";
+
+      // Create download link for the file
+      const blob = new Blob([response.data], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `${exportType}-report-${selectedDateRange}.${fileExtension}`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error exporting report:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        `Failed to export ${exportType} report. Please try again.`;
+      alert(errorMessage);
     }
   };
 
-  const handleExportReport = (type) => {
-    // In a real app, this would trigger a download
-    alert(`Exporting ${type} report... (Feature not implemented in demo)`);
-  };
-
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-US", {
+    // Use KES as default since this is an East African system
+    return new Intl.NumberFormat("en-KE", {
       style: "currency",
-      currency: "USD",
-    }).format(amount);
+      currency: "KES",
+    }).format(amount || 0);
   };
 
   const formatPercentage = (value) => {
-    return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+    const num = value || 0;
+    return `${num > 0 ? "+" : ""}${num.toFixed(1)}%`;
   };
 
   if (loading) {
@@ -166,11 +211,11 @@ const Reports = () => {
               <i className="fas fa-calendar"></i>
             </div>
             <div className="card-content">
-              <h3>{reports.eventSummary?.totalEvents || 0}</h3>
+              <h3>{overviewData.summary.totalEvents || 0}</h3>
               <p>Total Events</p>
               <span className="card-trend positive">
                 <i className="fas fa-arrow-up"></i>
-                {reports.eventSummary?.activeEvents || 0} active
+                {overviewData.summary.activeEvents || 0} active
               </span>
             </div>
           </div>
@@ -180,12 +225,12 @@ const Reports = () => {
               <i className="fas fa-ticket-alt"></i>
             </div>
             <div className="card-content">
-              <h3>{reports.ticketSales?.totalTickets || 0}</h3>
+              <h3>{overviewData.summary.totalTickets || 0}</h3>
               <p>Tickets Sold</p>
               <span className="card-trend positive">
                 <i className="fas fa-arrow-up"></i>
                 Avg:{" "}
-                {formatCurrency(reports.ticketSales?.averageTicketPrice || 0)}
+                {formatCurrency(overviewData.summary.averageTicketPrice || 0)}
               </span>
             </div>
           </div>
@@ -195,11 +240,11 @@ const Reports = () => {
               <i className="fas fa-dollar-sign"></i>
             </div>
             <div className="card-content">
-              <h3>{formatCurrency(reports.revenue?.totalRevenue || 0)}</h3>
+              <h3>{formatCurrency(overviewData.summary.totalRevenue || 0)}</h3>
               <p>Total Revenue</p>
               <span className="card-trend positive">
                 <i className="fas fa-arrow-up"></i>
-                {formatPercentage(reports.revenue?.monthlyGrowth || 0)}
+                {formatPercentage(overviewData.summary.monthlyGrowth || 0)}
               </span>
             </div>
           </div>
@@ -209,11 +254,11 @@ const Reports = () => {
               <i className="fas fa-users"></i>
             </div>
             <div className="card-content">
-              <h3>{reports.userActivity?.activeUsers || 0}</h3>
+              <h3>{overviewData.summary.activeUsers || 0}</h3>
               <p>Active Users</p>
               <span className="card-trend positive">
                 <i className="fas fa-arrow-up"></i>
-                {reports.userActivity?.newUsers || 0} new
+                {overviewData.summary.newUsers || 0} new
               </span>
             </div>
           </div>
@@ -232,19 +277,22 @@ const Reports = () => {
               </button>
             </div>
             <div className="top-events-list">
-              {reports.eventSummary?.topEvents?.map((event, index) => (
-                <div key={index} className="event-performance-item">
+              {overviewData.topEvents?.map((event, index) => (
+                <div
+                  key={event._id || index}
+                  className="event-performance-item"
+                >
                   <div className="event-rank">#{index + 1}</div>
                   <div className="event-details">
                     <h4>{event.name}</h4>
                     <div className="event-stats">
                       <span className="stat">
                         <i className="fas fa-ticket-alt"></i>
-                        {event.tickets} tickets
+                        {event.ticketsSold || 0} tickets
                       </span>
                       <span className="stat">
                         <i className="fas fa-dollar-sign"></i>
-                        {formatCurrency(event.revenue)}
+                        {formatCurrency(event.revenue || 0)}
                       </span>
                     </div>
                   </div>
@@ -252,19 +300,28 @@ const Reports = () => {
                     <div className="progress-bar">
                       <div
                         className="progress-fill"
-                        style={{ width: `${(event.tickets / 500) * 100}%` }}
+                        style={{
+                          width: `${Math.min(
+                            (event.ticketsSold / (event.capacity || 1)) * 100,
+                            100
+                          )}%`,
+                        }}
                       ></div>
                     </div>
                   </div>
                 </div>
-              ))}
+              )) || (
+                <div className="empty-state">
+                  <p>No events data available for the selected period</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Revenue Breakdown */}
+          {/* Revenue by Category */}
           <div className="report-section">
             <div className="section-header">
-              <h2>Revenue by Category</h2>
+              <h2>Events by Category</h2>
               <button
                 onClick={() => handleExportReport("revenue")}
                 className="btn btn-sm btn-outline"
@@ -273,34 +330,47 @@ const Reports = () => {
               </button>
             </div>
             <div className="revenue-breakdown">
-              {reports.revenue?.revenueByCategory?.map((category, index) => (
-                <div key={index} className="revenue-category">
-                  <div className="category-info">
-                    <span className="category-name">{category.category}</span>
-                    <span className="category-amount">
-                      {formatCurrency(category.amount)}
-                    </span>
+              {overviewData.eventsByCategory?.map((category, index) => {
+                const maxCount = Math.max(
+                  ...overviewData.eventsByCategory.map((c) => c.count)
+                );
+                return (
+                  <div key={category._id || index} className="revenue-category">
+                    <div className="category-info">
+                      <span className="category-name">
+                        {category._id || "Uncategorized"}
+                      </span>
+                      <span className="category-amount">
+                        {category.count} events
+                      </span>
+                    </div>
+                    <div className="category-bar">
+                      <div
+                        className="bar-fill"
+                        style={{
+                          width: `${(category.count / maxCount) * 100}%`,
+                          backgroundColor: `hsl(${index * 120}, 60%, 50%)`,
+                        }}
+                      ></div>
+                    </div>
+                    <div className="category-percentage">
+                      {(
+                        (category.count /
+                          overviewData.eventsByCategory.reduce(
+                            (sum, c) => sum + c.count,
+                            0
+                          )) *
+                        100
+                      ).toFixed(1)}
+                      %
+                    </div>
                   </div>
-                  <div className="category-bar">
-                    <div
-                      className="bar-fill"
-                      style={{
-                        width: `${
-                          (category.amount / reports.revenue.totalRevenue) * 100
-                        }%`,
-                        backgroundColor: `hsl(${index * 120}, 60%, 50%)`,
-                      }}
-                    ></div>
-                  </div>
-                  <div className="category-percentage">
-                    {(
-                      (category.amount / reports.revenue.totalRevenue) *
-                      100
-                    ).toFixed(1)}
-                    %
-                  </div>
+                );
+              }) || (
+                <div className="empty-state">
+                  <p>No category data available for the selected period</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -316,14 +386,62 @@ const Reports = () => {
               </button>
             </div>
             <div className="sales-chart">
-              <div className="chart-placeholder">
-                <i className="fas fa-chart-line"></i>
-                <p>Sales trend visualization would appear here</p>
-                <p className="chart-note">
-                  Total sales over the last {selectedDateRange}:{" "}
-                  {reports.ticketSales?.totalTickets || 0} tickets
-                </p>
-              </div>
+              {salesData && salesData.length > 0 ? (
+                <div className="chart-container">
+                  <div className="chart-bars">
+                    {salesData.map((dayData, index) => {
+                      const maxSales = Math.max(
+                        ...salesData.map((d) => d.totalSales)
+                      );
+                      const height =
+                        maxSales > 0
+                          ? (dayData.totalSales / maxSales) * 100
+                          : 0;
+
+                      return (
+                        <div
+                          key={dayData._id || index}
+                          className="chart-bar-item"
+                        >
+                          <div
+                            className="chart-bar"
+                            style={{ height: `${height}%` }}
+                            title={`${dayData._id}: ${formatCurrency(
+                              dayData.totalSales
+                            )} (${dayData.ticketCount} tickets)`}
+                          ></div>
+                          <div className="chart-label">
+                            {new Date(dayData._id).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="chart-summary">
+                    <p>
+                      Total sales in period:{" "}
+                      {formatCurrency(
+                        salesData.reduce((sum, d) => sum + d.totalSales, 0)
+                      )}
+                    </p>
+                    <p>
+                      Total tickets sold:{" "}
+                      {salesData.reduce((sum, d) => sum + d.ticketCount, 0)}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="chart-placeholder">
+                  <i className="fas fa-chart-line"></i>
+                  <p>No sales data available for the selected period</p>
+                  <p className="chart-note">
+                    Sales data will appear here once tickets are purchased
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -340,7 +458,9 @@ const Reports = () => {
                 <div className="metric-content">
                   <h4>Average Order Value</h4>
                   <span className="metric-value">
-                    {formatCurrency(reports.revenue?.averageOrderValue || 0)}
+                    {formatCurrency(
+                      overviewData.summary.averageOrderValue || 0
+                    )}
                   </span>
                 </div>
               </div>
@@ -352,7 +472,7 @@ const Reports = () => {
                 <div className="metric-content">
                   <h4>User Growth Rate</h4>
                   <span className="metric-value">
-                    {formatPercentage(reports.userActivity?.userGrowth || 0)}
+                    {formatPercentage(overviewData.summary.userGrowth || 0)}
                   </span>
                 </div>
               </div>
@@ -364,7 +484,7 @@ const Reports = () => {
                 <div className="metric-content">
                   <h4>Upcoming Events</h4>
                   <span className="metric-value">
-                    {reports.eventSummary?.upcomingEvents || 0}
+                    {overviewData.summary.upcomingEvents || 0}
                   </span>
                 </div>
               </div>
@@ -376,13 +496,103 @@ const Reports = () => {
                 <div className="metric-content">
                   <h4>Revenue Growth</h4>
                   <span className="metric-value">
-                    {formatPercentage(reports.revenue?.monthlyGrowth || 0)}
+                    {formatPercentage(overviewData.summary.monthlyGrowth || 0)}
                   </span>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Export Format Selection Modal */}
+        {showExportModal && (
+          <div className="modal-overlay">
+            <div className="modal export-modal">
+              <div className="modal-header">
+                <h3>Export {exportType} Report</h3>
+                <button
+                  className="modal-close"
+                  onClick={() => setShowExportModal(false)}
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+
+              <div className="modal-body">
+                <div className="format-selection">
+                  <h4>Choose Export Format:</h4>
+
+                  <div className="format-options">
+                    <label className="format-option">
+                      <input
+                        type="radio"
+                        name="exportFormat"
+                        value="csv"
+                        checked={exportFormat === "csv"}
+                        onChange={(e) => setExportFormat(e.target.value)}
+                      />
+                      <div className="format-card">
+                        <i className="fas fa-file-csv"></i>
+                        <div className="format-info">
+                          <h5>CSV File</h5>
+                          <p>
+                            Spreadsheet format, easy to import into Excel or
+                            Google Sheets
+                          </p>
+                        </div>
+                      </div>
+                    </label>
+
+                    <label className="format-option">
+                      <input
+                        type="radio"
+                        name="exportFormat"
+                        value="pdf"
+                        checked={exportFormat === "pdf"}
+                        onChange={(e) => setExportFormat(e.target.value)}
+                      />
+                      <div className="format-card">
+                        <i className="fas fa-file-pdf"></i>
+                        <div className="format-info">
+                          <h5>PDF Document</h5>
+                          <p>
+                            Professional report with LegitEvents branding and
+                            formatting
+                          </p>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="date-range-info">
+                  <p>
+                    <strong>Date Range:</strong> {selectedDateRange}
+                  </p>
+                  <p>
+                    <strong>Report Type:</strong> {exportType}
+                  </p>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setShowExportModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleDownloadReport}
+                >
+                  <i className="fas fa-download"></i>
+                  Download {exportFormat.toUpperCase()}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

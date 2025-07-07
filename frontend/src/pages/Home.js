@@ -58,10 +58,33 @@ const Home = () => {
   return (
     <div className="home-page">
       {/* Hero Section */}
-      <div className="hero-section">
+      <div
+        className="hero-section"
+        style={{
+          background: `#dee6ff`,
+        }}
+      >
         <div className="hero-content">
-          <h1>Discover Amazing Events</h1>
-          <p>Find and book tickets for the best events in your area</p>
+          <div className="hero-logo">
+            <img
+              src="/legit-events.png"
+              alt="LegitEvents Logo"
+              className="hero-logo-img"
+              onError={(e) => {
+                console.log("Hero logo failed to load:", e);
+                // Fallback to text logo if image fails
+                e.target.style.display = "none";
+                e.target.parentElement.innerHTML =
+                  '<div class="hero-logo-fallback">🎉 LegitEvents</div>';
+              }}
+              onLoad={() => console.log("Hero logo loaded successfully")}
+            />
+          </div>
+          <h1>Welcome to LegitEvents™</h1>
+          <p>
+            Discover Amazing Events Across East Africa - From Nairobi to
+            Kampala, Book Your Next Unforgettable Experience
+          </p>
           {!isAuthenticated && (
             <div className="hero-actions">
               <a href="/register" className="btn btn-primary">
