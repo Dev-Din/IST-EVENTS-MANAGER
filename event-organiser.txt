@@ -1,0 +1,297 @@
+
+
+
+> Build a fullstack secure Event Organising System using:
+>
+>  Frontend: React.js
+>  Backend: Node.js + Express
+>  Database: MongoDB
+>  Authentication: Session-based (e.g. `express-session` with `connect-mongo`)
+>  Role-Based Access Control: Super Admin, Sub-Admin, Client/Customer
+
+---
+
+  USER ROLES & FEATURES
+
+  1. Super Admin
+
+ Features:
+
+   Register/Login
+   Full access to all data and system functions
+   Manage:
+
+     Events (create/edit/delete/view)
+     Sub-Admins (create/edit/delete/view)
+     Clients (view/delete)
+   Generate/download reports (`.csv`, `.pdf`)
+ Routes:
+
+   `/admin/login`
+   `/admin/dashboard`
+   `/admin/events`
+   `/admin/events/new`
+   `/admin/events/:id/edit`
+   `/admin/sub-admins`
+   `/admin/sub-admins/new`
+   `/admin/clients`
+   `/admin/reports`
+
+---
+
+  2. Sub-Admin
+
+ Features:
+
+   Login
+   Limited access granted by Super Admin
+   Typically can manage events only
+ Routes:
+
+   `/subadmin/login`
+   `/subadmin/dashboard`
+   `/subadmin/events`
+   `/subadmin/events/new`
+   `/subadmin/events/:id/edit`
+
+---
+
+  3. Client / Customer
+
+ Features:
+
+   Can view events publicly
+   Can create account (optional)
+   Must log in to buy tickets
+   Can see their purchased tickets
+ Routes:
+
+   `/` (homepage with event cards)
+   `/login`
+   `/register`
+   `/events`
+   `/events/:id`
+   `/purchase/:eventId`
+   `/my-tickets` (requires login)
+
+---
+
+ SYSTEM-WIDE REQUIREMENTS
+
+ Secure login system with sessions (no token needed)
+ Protect routes with role-based middleware
+ Modular folder structure:
+
+   `routes/`, `controllers/`, `models/`, `middleware/`
+ Use MongoDB collections for:
+
+   Users (with roles: superadmin, subadmin, client)
+   Events
+   Tickets
+ Backend-generated `.pdf`/`.csv` using libraries like `pdfkit`, `puppeteer`, or `fast-csv`
+
+---
+
+
+
+
+
+
+ 1. Backend Route Structure (Express)
+
+ Folder Structure
+
+```
+backend/
+├── controllers/
+│   ├── authController.js
+│   ├── eventController.js
+│   ├── adminController.js
+│   └── ticketController.js
+├── middleware/
+│   ├── authMiddleware.js
+│   └── roleMiddleware.js
+├── models/
+│   ├── User.js
+│   ├── Event.js
+│   └── Ticket.js
+├── routes/
+│   ├── authRoutes.js
+│   ├── adminRoutes.js
+│   ├── eventRoutes.js
+│   ├── subAdminRoutes.js
+│   └── clientRoutes.js
+├── utils/
+│   ├── pdfGenerator.js
+│   └── csvGenerator.js
+├── app.js
+└── server.js
+```
+
+  Route Breakdown
+
+ `/routes/authRoutes.js`
+
+```js
+// For login/register routes
+POST /register        → Register Client
+POST /login           → Login for all roles
+GET /logout           → Logout user
+```
+
+ `/routes/adminRoutes.js`
+
+```js
+// Protected by Super Admin Middleware
+GET    /admin/dashboard
+POST   /admin/events
+PUT    /admin/events/:id
+DELETE /admin/events/:id
+GET    /admin/events
+GET    /admin/reports/csv
+GET    /admin/reports/pdf
+
+// Manage Sub-Admins
+POST   /admin/sub-admins
+GET    /admin/sub-admins
+PUT    /admin/sub-admins/:id
+DELETE /admin/sub-admins/:id
+
+// Manage Clients
+GET    /admin/clients
+DELETE /admin/clients/:id
+```
+
+ `/routes/subAdminRoutes.js`
+
+```js
+// Protected by Sub-Admin Role
+GET    /subadmin/dashboard
+POST   /subadmin/events
+PUT    /subadmin/events/:id
+DELETE /subadmin/events/:id
+GET    /subadmin/events
+```
+
+ `/routes/clientRoutes.js`
+
+```js
+GET    /events              → Public list
+GET    /events/:id          → View details
+POST   /purchase/:eventId   → Buy ticket (must be logged in)
+GET    /my-tickets          → View personal tickets (must be logged in)
+```
+
+---
+
+  2. MongoDB Schemas (Mongoose)
+
+ User.js
+
+```js
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+  username: String,
+  email: String,
+  password: String,
+  role: {
+    type: String,
+    enum: ['superadmin', 'subadmin', 'client'],
+    default: 'client'
+  }
+});
+
+module.exports = mongoose.model('User', userSchema);
+```
+
+ Event.js
+
+```js
+const mongoose = require('mongoose');
+
+const eventSchema = new mongoose.Schema({
+  name: String,
+  location: String,
+  date: Date,
+  charges: Number,
+  description: String,
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+});
+
+module.exports = mongoose.model('Event', eventSchema);
+```
+
+ Ticket.js
+
+```js
+const mongoose = require('mongoose');
+
+const ticketSchema = new mongoose.Schema({
+  event: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
+  buyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  purchaseDate: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('Ticket', ticketSchema);
+```
+
+---
+
+  3. React Frontend Folder & Routing
+
+ React Folder Structure
+```
+frontend/
+├── public/
+├── src/
+│   ├── components/
+│   │   ├── Navbar.js
+│   │   ├── EventCard.js
+│   ├── pages/
+│   │   ├── Home.js
+│   │   ├── Login.js
+│   │   ├── Register.js
+│   │   ├── AdminDashboard.js
+│   │   ├── SubAdminDashboard.js
+│   │   ├── Purchase.js
+│   │   ├── MyTickets.js
+│   ├── routes/
+│   │   └── AppRoutes.js
+│   ├── services/
+│   │   └── api.js
+│   ├── App.js
+│   └── index.js
+```
+
+  React Router Setup Example (`AppRoutes.js`)
+
+```js
+import { Routes, Route } from 'react-router-dom';
+import Home from '../pages/Home';
+import Login from '../pages/Login';
+import Register from '../pages/Register';
+import AdminDashboard from '../pages/AdminDashboard';
+import SubAdminDashboard from '../pages/SubAdminDashboard';
+import Purchase from '../pages/Purchase';
+import MyTickets from '../pages/MyTickets';
+
+export default function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/subadmin/dashboard" element={<SubAdminDashboard />} />
+      <Route path="/purchase/:eventId" element={<Purchase />} />
+      <Route path="/my-tickets" element={<MyTickets />} />
+    </Routes>
+  );
+}
+```
+
+---
+
+
+
