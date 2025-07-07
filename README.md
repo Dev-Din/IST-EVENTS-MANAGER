@@ -1,374 +1,460 @@
-# Event Organiser Frontend
+# 🎪 Event Organising System
 
-A modern, responsive React.js frontend application for the Event Organising System.
+A full-stack web application for managing events, ticket sales, and user administration. Built with React.js frontend and Node.js/Express backend with MongoDB database.
 
-## 🚀 Features
+## 🌟 Overview
 
-- **Modern React Architecture**: Built with React 18, React Router, and Hooks
-- **Responsive Design**: Mobile-first approach with CSS Grid and Flexbox
-- **Role-based Authentication**: Support for Super Admin, Sub-Admin, and Client roles
-- **Session Management**: Secure session-based authentication
-- **Component Library**: Reusable components with consistent styling
-- **Accessibility**: WCAG compliant with proper ARIA labels and keyboard navigation
-- **Progressive Enhancement**: Works without JavaScript enabled
+This comprehensive event management platform allows organizations to create, manage, and sell tickets for events while providing different access levels for administrators and clients.
+
+### 🎯 Key Features
+
+- **🎫 Event Management**: Create, update, and manage events with detailed information
+- **🛒 Ticket System**: Purchase tickets with quantity limits and pricing
+- **👥 User Management**: Role-based access control (Super Admin, Sub-Admin, Client)
+- **📊 Analytics**: Sales reports and user analytics for administrators
+- **🔐 Security**: JWT authentication, password hashing, and rate limiting
+- **📱 Responsive**: Mobile-first design that works on all devices
+- **🚀 Modern Stack**: Latest technologies and best practices
+
+## 🏗️ System Architecture
+
+```
+┌─────────────────┐    HTTP/REST API    ┌─────────────────┐
+│   React.js      │◄──────────────────►│   Node.js       │
+│   Frontend      │                     │   Backend       │
+│   (Port 3000)   │                     │   (Port 5000)   │
+└─────────────────┘                     └─────────────────┘
+                                               │
+                                               ▼
+                                        ┌─────────────────┐
+                                        │   MongoDB       │
+                                        │   Database      │
+                                        │   (Port 27017)  │
+                                        └─────────────────┘
+```
+
+## 🛠️ Technology Stack
+
+### Frontend
+
+- **React 18** - Modern UI library with hooks
+- **React Router** - Client-side routing
+- **Axios** - HTTP client for API calls
+- **CSS3** - Modern styling with Grid and Flexbox
+- **Create React App** - Development tooling
+
+### Backend
+
+- **Node.js** - JavaScript runtime
+- **Express.js** - Web application framework
+- **MongoDB** - NoSQL database
+- **Mongoose** - ODM for MongoDB
+- **JWT** - JSON Web Tokens for authentication
+- **bcrypt** - Password hashing
+- **express-validator** - Input validation
+- **helmet** - Security middleware
+- **cors** - Cross-origin resource sharing
 
 ## 📁 Project Structure
 
 ```
-frontend/
-├── public/
-│   └── index.html          # Main HTML template
-├── src/
-│   ├── components/         # Reusable components
-│   │   ├── Navbar.js      # Navigation component
-│   │   ├── EventCard.js   # Event display component
-│   │   ├── Loading.js     # Loading spinner component
-│   │   └── Modal.js       # Modal dialog component
-│   ├── pages/             # Page components
-│   │   ├── Home.js        # Landing page with events
-│   │   ├── Login.js       # User login
-│   │   ├── Register.js    # User registration
-│   │   ├── EventDetails.js # Individual event page
-│   │   ├── Purchase.js    # Ticket purchasing
-│   │   ├── MyTickets.js   # User's tickets
-│   │   ├── AdminDashboard.js # Super admin dashboard
-│   │   └── NotFound.js    # 404 error page
-│   ├── routes/            # Routing configuration
-│   │   └── AppRoutes.js   # Protected routes and navigation
-│   ├── services/          # API and service layers
-│   │   └── api.js         # HTTP client and API endpoints
-│   ├── App.js             # Main app component with auth context
-│   ├── App.css            # Global app styles
-│   ├── index.js           # React app entry point
-│   └── index.css          # CSS reset and variables
-├── package.json           # Dependencies and scripts
-└── README.md             # This file
+Event Organising System/
+├── frontend/                    # React.js Frontend Application
+│   ├── public/
+│   │   ├── index.html          # HTML template
+│   │   └── favicon.svg         # Custom favicon
+│   ├── src/
+│   │   ├── components/         # Reusable UI components
+│   │   │   ├── Navbar.js       # Navigation component
+│   │   │   ├── EventCard.js    # Event display component
+│   │   │   ├── Loading.js      # Loading states
+│   │   │   └── Modal.js        # Modal dialogs
+│   │   ├── pages/              # Route pages
+│   │   │   ├── Home.js         # Landing page
+│   │   │   ├── Login.js        # Authentication
+│   │   │   ├── Register.js     # User registration
+│   │   │   ├── EventDetails.js # Event information
+│   │   │   ├── Purchase.js     # Ticket purchasing
+│   │   │   ├── MyTickets.js    # User tickets
+│   │   │   ├── AdminDashboard.js # Admin interface
+│   │   │   └── NotFound.js     # 404 page
+│   │   ├── routes/
+│   │   │   └── AppRoutes.js    # Route configuration
+│   │   ├── services/
+│   │   │   └── api.js          # API integration
+│   │   ├── App.js              # Main app component
+│   │   └── index.js            # Entry point
+│   └── package.json            # Dependencies
+│
+├── backend/                     # Node.js Backend API
+│   ├── controllers/            # Business logic
+│   │   ├── auth.js            # Authentication logic
+│   │   ├── events.js          # Event management
+│   │   ├── tickets.js         # Ticket operations
+│   │   └── admin.js           # Admin functions
+│   ├── middleware/             # Custom middleware
+│   │   ├── auth.js            # JWT verification
+│   │   ├── authorize.js       # Role-based access
+│   │   ├── errorHandler.js    # Error handling
+│   │   └── asyncHandler.js    # Async wrapper
+│   ├── models/                 # Database schemas
+│   │   ├── User.js            # User model
+│   │   ├── Event.js           # Event model
+│   │   └── Ticket.js          # Ticket model
+│   ├── routes/                 # API endpoints
+│   │   ├── auth.js            # Auth routes
+│   │   ├── events.js          # Event routes
+│   │   ├── tickets.js         # Ticket routes
+│   │   └── admin.js           # Admin routes
+│   ├── scripts/
+│   │   └── seed.js            # Database seeding
+│   ├── server.js              # Express server
+│   └── package.json           # Dependencies
+│
+├── .gitignore                  # Git ignore rules
+└── README.md                   # This file
 ```
 
-## 🎨 Styling Architecture
-
-### CSS Organization
-
-- **index.css**: CSS reset, variables, and global styles
-- **App.css**: Main app layout and utility classes
-- **Component CSS**: Each component has its own CSS file
-- **Page CSS**: Each page has dedicated styling
-
-### Design System
-
-- **CSS Variables**: Consistent colors, spacing, and typography
-- **Responsive Grid**: Mobile-first responsive design
-- **Accessibility**: Focus states, high contrast support
-- **Modern Animations**: Subtle hover effects and transitions
-
-### Color Palette
-
-```css
---primary-color: #007bff;     /* Main brand color */
---success-color: #28a745;     /* Success states */
---danger-color: #dc3545;      /* Error states */
---warning-color: #ffc107;     /* Warning states */
---gray-100 to --gray-900;     /* Neutral grays */
-```
-
-## 🔧 Installation & Setup
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 16+
-- npm or yarn
+- **Node.js** 16.0.0 or higher
+- **MongoDB** 4.4.0 or higher
+- **npm** or **yarn**
 
 ### Installation
 
-1. **Navigate to frontend directory**
+1. **Clone the repository**
+
+```bash
+git clone <repository-url>
+cd "Event Organising System"
+```
+
+2. **Set up Backend**
+
+```bash
+cd backend
+npm install
+
+# Create environment file
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+3. **Set up Frontend**
+
+```bash
+cd ../frontend
+npm install
+
+# Create environment file
+echo "REACT_APP_API_URL=http://localhost:5000/api" > .env
+```
+
+4. **Start MongoDB**
+
+```bash
+# Make sure MongoDB is running
+mongod --dbpath /path/to/your/db
+```
+
+5. **Seed the Database (Optional)**
+
+```bash
+cd backend
+npm run seed
+```
+
+6. **Start the Applications**
+
+**Backend (Terminal 1):**
+
+```bash
+cd backend
+npm run dev
+# Server runs on http://localhost:5000
+```
+
+**Frontend (Terminal 2):**
 
 ```bash
 cd frontend
+npm start
+# App opens at http://localhost:3000
 ```
 
-2. **Install dependencies**
+## 🔐 Authentication & Authorization
+
+### User Roles
+
+| Role            | Permissions          | Access                                  |
+| --------------- | -------------------- | --------------------------------------- |
+| **Super Admin** | Full system access   | All routes, user management, analytics  |
+| **Sub-Admin**   | Limited admin access | Manage own events, view reports         |
+| **Client**      | Standard user access | Register, purchase tickets, view events |
+
+### Sample Accounts
+
+After running the seed script, you can use these accounts:
+
+```
+Super Admin:
+Email: superadmin@example.com
+Password: password123
+
+Sub-Admin:
+Email: subadmin1@example.com
+Password: password123
+
+Client:
+Email: client1@example.com
+Password: password123
+```
+
+## 🌐 API Documentation
+
+### Base URL
+
+```
+http://localhost:5000/api
+```
+
+### Authentication Endpoints
+
+| Method | Endpoint         | Description       | Access        |
+| ------ | ---------------- | ----------------- | ------------- |
+| POST   | `/auth/register` | Register new user | Public        |
+| POST   | `/auth/login`    | User login        | Public        |
+| POST   | `/auth/logout`   | User logout       | Authenticated |
+| GET    | `/auth/profile`  | Get user profile  | Authenticated |
+
+### Event Endpoints
+
+| Method | Endpoint      | Description     | Access      |
+| ------ | ------------- | --------------- | ----------- |
+| GET    | `/events`     | Get all events  | Public      |
+| GET    | `/events/:id` | Get event by ID | Public      |
+| POST   | `/events`     | Create event    | Admin       |
+| PUT    | `/events/:id` | Update event    | Admin       |
+| DELETE | `/events/:id` | Delete event    | Super Admin |
+
+### Ticket Endpoints
+
+| Method | Endpoint                  | Description       | Access        |
+| ------ | ------------------------- | ----------------- | ------------- |
+| POST   | `/tickets/purchase`       | Purchase tickets  | Authenticated |
+| GET    | `/tickets/my-tickets`     | Get user tickets  | Authenticated |
+| GET    | `/tickets/event/:eventId` | Get event tickets | Admin         |
+
+### Admin Endpoints
+
+| Method | Endpoint            | Description      | Access      |
+| ------ | ------------------- | ---------------- | ----------- |
+| GET    | `/admin/users`      | Get all users    | Super Admin |
+| GET    | `/admin/analytics`  | Get analytics    | Admin       |
+| POST   | `/admin/sub-admins` | Create sub-admin | Super Admin |
+
+## 🛡️ Security Features
+
+### Backend Security
+
+- **JWT Authentication** with secure tokens
+- **Password Hashing** using bcrypt
+- **Rate Limiting** to prevent abuse
+- **Input Validation** using express-validator
+- **CORS** configuration for cross-origin requests
+- **Helmet** for security headers
+- **Account Lockout** after failed login attempts
+
+### Frontend Security
+
+- **Session Management** with automatic token refresh
+- **Protected Routes** based on user roles
+- **XSS Prevention** through React's built-in protections
+- **Secure API Communication** with HTTPS
+
+## 📊 Database Schema
+
+### User Model
+
+```javascript
+{
+  name: String,
+  email: String (unique),
+  password: String (hashed),
+  role: String (client/sub-admin/super-admin),
+  isLocked: Boolean,
+  loginAttempts: Number,
+  createdAt: Date
+}
+```
+
+### Event Model
+
+```javascript
+{
+  title: String,
+  description: String,
+  category: String,
+  date: Date,
+  location: String,
+  price: Number,
+  capacity: Number,
+  availableTickets: Number,
+  createdBy: ObjectId (User),
+  createdAt: Date
+}
+```
+
+### Ticket Model
+
+```javascript
+{
+  event: ObjectId (Event),
+  purchaser: ObjectId (User),
+  quantity: Number,
+  totalPrice: Number,
+  purchaseDate: Date,
+  status: String (active/cancelled)
+}
+```
+
+## 🎨 Frontend Features
+
+### Design System
+
+- **Responsive Design** - Mobile-first approach
+- **Modern CSS** - Grid, Flexbox, CSS Variables
+- **Accessibility** - WCAG compliant with ARIA labels
+- **Dark Mode Ready** - CSS variables for theming
+
+### Key Components
+
+- **Navbar** - Responsive navigation with role-based menus
+- **EventCard** - Reusable event display component
+- **Modal** - Accessible modal dialogs
+- **Loading** - Consistent loading states
+- **Protected Routes** - Role-based route protection
+
+## 🖥️ Development
+
+### Available Scripts
+
+**Backend:**
 
 ```bash
-npm install
+npm start          # Start production server
+npm run dev        # Start development server with nodemon
+npm run seed       # Seed database with sample data
+npm test           # Run tests
 ```
 
-3. **Set up environment variables**
-   Create a `.env` file in the frontend directory:
+**Frontend:**
+
+```bash
+npm start          # Start development server
+npm run build      # Build for production
+npm test           # Run test suite
+npm run eject      # Eject from Create React App
+```
+
+### Environment Variables
+
+**Backend (.env):**
+
+```env
+NODE_ENV=development
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/event_organiser
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRE=30d
+```
+
+**Frontend (.env):**
 
 ```env
 REACT_APP_API_URL=http://localhost:5000/api
 ```
 
-4. **Start development server**
-
-```bash
-npm start
-```
-
-The app will open at `http://localhost:3000`
-
-## 🗂️ Available Scripts
-
-```bash
-npm start          # Start development server
-npm build          # Build for production
-npm test           # Run test suite
-npm eject          # Eject from Create React App (irreversible)
-```
-
-## 🔐 Authentication System
-
-### Auth Context
-
-The app uses React Context for global authentication state:
-
-```javascript
-const { user, isAuthenticated, login, logout, isAdmin, isSubAdmin } = useAuth();
-```
-
-### Protected Routes
-
-Routes are protected based on user roles:
-
-- **Public**: Home, Event Details, Login, Register
-- **Authenticated**: My Tickets, Purchase
-- **Admin Only**: Admin Dashboard, Manage Events, Reports
-- **Sub-Admin**: Limited admin functionality
-
-### Session Management
-
-- **Automatic token refresh**
-- **Persistent login state**
-- **Secure logout with cleanup**
-
-## 📱 Responsive Design
-
-### Breakpoints
-
-```css
-/* Mobile-first approach */
-@media (max-width: 480px) {
-  /* Small phones */
-}
-@media (max-width: 768px) {
-  /* Tablets */
-}
-@media (max-width: 1024px) {
-  /* Small desktops */
-}
-@media (min-width: 1200px) {
-  /* Large screens */
-}
-```
-
-### Grid System
-
-- **CSS Grid**: For complex layouts
-- **Flexbox**: For component-level alignment
-- **Auto-responsive**: Components adapt automatically
-
-## 🎯 Key Components
-
-### Navbar
-
-- **Responsive navigation** with mobile hamburger menu
-- **Role-based links** showing appropriate options
-- **User info display** with logout functionality
-
-### EventCard
-
-- **Reusable component** for displaying events
-- **Hover effects** and responsive design
-- **Action buttons** for different user roles
-
-### Loading
-
-- **Consistent loading states** across the app
-- **Accessible** with proper ARIA labels
-- **Multiple variants** (small, medium, large)
-
-### Modal
-
-- **Accessible modal dialogs**
-- **Keyboard navigation** support
-- **Click outside to close**
-- **Multiple sizes** (small, medium, large, full)
-
-## 🌐 API Integration
-
-### Axios Configuration
-
-```javascript
-// Base configuration
-const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
-  withCredentials: true, // For session cookies
-  timeout: 10000,
-});
-```
-
-### API Modules
-
-- **eventsAPI**: Event CRUD operations
-- **authAPI**: Authentication endpoints
-- **ticketsAPI**: Ticket management
-- **adminAPI**: Admin-specific operations
-
-### Error Handling
-
-- **Global error interceptors**
-- **User-friendly error messages**
-- **Automatic retry for failed requests**
-
-## ♿ Accessibility Features
-
-### WCAG Compliance
-
-- **Semantic HTML** structure
-- **ARIA labels** for dynamic content
-- **Keyboard navigation** support
-- **Focus management** in modals
-
-### User Experience
-
-- **High contrast mode** support
-- **Reduced motion** preferences
-- **Screen reader** compatibility
-- **Consistent focus indicators**
-
-## 🎨 Theming & Customization
-
-### CSS Variables
-
-Easy customization through CSS variables:
-
-```css
-:root {
-  --primary-color: #your-color;
-  --font-family: "Your Font";
-  --border-radius: 8px;
-}
-```
-
-### Component Variants
-
-Components support multiple variants:
-
-```javascript
-<EventCard variant="compact" />
-<Button size="lg" variant="outline" />
-<Modal size="large" />
-```
-
 ## 🚀 Deployment
 
-### Production Build
+### Production Checklist
 
-```bash
-npm run build
-```
+1. **Environment Setup**
 
-### Build Optimization
+   - [ ] Set production environment variables
+   - [ ] Configure MongoDB Atlas or production database
+   - [ ] Set secure JWT secrets
 
-- **Code splitting** with React.lazy()
-- **Asset optimization** and compression
-- **Service worker** for offline support
-- **Bundle analysis** tools
+2. **Build Applications**
 
-### Environment Configuration
+   ```bash
+   # Frontend
+   cd frontend && npm run build
 
-```bash
-# Production environment variables
-REACT_APP_API_URL=https://api.yourdomain.com
-REACT_APP_VERSION=1.0.0
-```
+   # Backend (if using TypeScript)
+   cd backend && npm run build
+   ```
+
+3. **Server Configuration**
+   - [ ] Configure reverse proxy (nginx)
+   - [ ] Set up SSL certificates
+   - [ ] Configure PM2 for process management
+
+### Deployment Options
+
+- **Heroku** - Easy deployment with MongoDB Atlas
+- **DigitalOcean** - VPS with full control
+- **Netlify + Heroku** - Frontend on Netlify, backend on Heroku
+- **Docker** - Containerized deployment
 
 ## 🧪 Testing
 
-### Test Structure
+### Backend Testing
 
 ```bash
-src/
-├── __tests__/
-│   ├── components/
-│   ├── pages/
-│   └── utils/
+cd backend
+npm test
 ```
 
-### Testing Strategy
-
-- **Unit tests** for components
-- **Integration tests** for pages
-- **End-to-end tests** for critical flows
-- **Accessibility tests** with axe-core
-
-## 📊 Performance
-
-### Optimization Techniques
-
-- **React.memo** for expensive components
-- **useCallback/useMemo** for optimization
-- **Lazy loading** for route components
-- **Image optimization** and lazy loading
-
-### Bundle Analysis
+### Frontend Testing
 
 ```bash
-npm run build
-npx webpack-bundle-analyzer build/static/js/*.js
+cd frontend
+npm test
 ```
 
-## 🔮 Future Enhancements
+### Manual Testing
 
-### Planned Features
+- Test all user roles and permissions
+- Verify responsive design on different devices
+- Test API endpoints with Postman/Insomnia
 
-- **Dark mode** theme toggle
-- **Offline support** with PWA
-- **Push notifications** for events
-- **Advanced filtering** and search
-- **Social sharing** integration
+## 🤝 Contributing
 
-### Technical Improvements
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-- **TypeScript** migration
-- **React Query** for server state
-- **Storybook** for component documentation
-- **Micro-frontend** architecture
+## 📝 License
 
-## 🐛 Troubleshooting
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-### Common Issues
+## 📧 Support
 
-1. **CORS errors**
+For support, email support@example.com or create an issue in the repository.
 
-   - Ensure backend allows frontend origin
-   - Check API_URL environment variable
+## 🎉 Acknowledgments
 
-2. **Authentication issues**
+- React.js community for excellent documentation
+- Express.js for the robust web framework
+- MongoDB for the flexible database solution
+- All contributors who help improve this project
 
-   - Clear browser cookies/localStorage
-   - Check session expiration
+---
 
-3. **Build failures**
-   - Clear node_modules and reinstall
-   - Check Node.js version compatibility
-
-### Development Tips
-
-- Use React Developer Tools browser extension
-- Enable source maps in development
-- Use the network tab to debug API calls
-- Check console for accessibility warnings
-
-## 📞 Support
-
-For development questions or issues:
-
-1. Check the troubleshooting section
-2. Review component documentation
-3. Check browser console for errors
-4. Ensure backend API is running
-
-## 📄 License
-
-This project is part of the Event Organising System and follows the same license terms.
+**Happy Event Organizing! 🎪✨**
