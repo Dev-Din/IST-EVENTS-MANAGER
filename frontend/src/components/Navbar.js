@@ -26,8 +26,16 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="nav-container">
         <Link to="/" className="nav-logo" onClick={closeMobileMenu}>
-          <i className="fas fa-calendar-alt"></i>
-          EventOrganiser
+          <img
+            src={`/legit-events.png?v=${Date.now()}`}
+            alt="LegitEvents Logo"
+            className="nav-logo-img"
+            onError={(e) => {
+              console.log("Logo failed to load:", e);
+              e.target.style.display = "none";
+            }}
+            onLoad={() => console.log("Logo loaded successfully")}
+          />
         </Link>
 
         <div className={`nav-menu ${isMobileMenuOpen ? "active" : ""}`}>

@@ -49,7 +49,8 @@ const register = asyncHandler(async (req, res, next) => {
     });
   }
 
-  const { username, email, password, fullName, phone, role } = req.body;
+  const { username, email, password, fullName, phone, country, role } =
+    req.body;
 
   // Check if user already exists
   const existingUser = await User.findOne({
@@ -70,6 +71,7 @@ const register = asyncHandler(async (req, res, next) => {
     password,
     fullName,
     phone,
+    country,
     role: role || "client", // Default to client role
   });
 
@@ -149,6 +151,7 @@ const updateProfile = asyncHandler(async (req, res, next) => {
   const fieldsToUpdate = {
     fullName: req.body.fullName,
     phone: req.body.phone,
+    country: req.body.country,
     preferences: req.body.preferences,
   };
 

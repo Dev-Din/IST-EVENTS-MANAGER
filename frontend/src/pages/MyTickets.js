@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import { ticketsAPI } from "../services/api";
 import "./MyTickets.css";
 
 const MyTickets = () => {
-  const { user } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -53,6 +51,29 @@ const MyTickets = () => {
 
   const generateTicketId = (ticket) => {
     return `TK-${ticket._id.slice(-8).toUpperCase()}`;
+  };
+
+  const handlePrintTicket = (ticketId) => {
+    // Remove any existing print-target class
+    const existingTargets = document.querySelectorAll(".print-target");
+    existingTargets.forEach((el) => el.classList.remove("print-target"));
+
+    // Add print-target class to the specific ticket
+    const ticketElement = document.querySelector(
+      `[data-ticket-id="${ticketId}"]`
+    );
+    if (ticketElement) {
+      ticketElement.classList.add("print-target");
+
+      // Small delay to ensure class is applied before printing
+      setTimeout(() => {
+        window.print();
+        // Remove the class after printing
+        setTimeout(() => {
+          ticketElement.classList.remove("print-target");
+        }, 1000);
+      }, 100);
+    }
   };
 
   if (loading) {
@@ -114,7 +135,11 @@ const MyTickets = () => {
                   <span className="number">
                     {formatPrice(
                       tickets.reduce(
-                        (total, ticket) => total + ticket.event.charges,
+                        (total, ticket) =>
+                          total +
+                          (ticket.totalAmount ||
+                            (ticket.unitPrice || ticket.event.charges || 0) *
+                              (ticket.quantity || 1)),
                         0
                       )
                     )}
@@ -128,6 +153,7 @@ const MyTickets = () => {
               {tickets.map((ticket) => (
                 <div
                   key={ticket._id}
+                  data-ticket-id={ticket._id}
                   className={`ticket-card ${
                     isEventPast(ticket.event.date) ? "past-event" : ""
                   }`}
@@ -179,7 +205,12 @@ const MyTickets = () => {
                         <div>
                           <span className="label">Price Paid</span>
                           <span className="value">
-                            {formatPrice(ticket.event.charges)}
+                            {formatPrice(
+                              ticket.totalAmount ||
+                                (ticket.unitPrice ||
+                                  ticket.event.charges ||
+                                  0) * (ticket.quantity || 1)
+                            )}
                           </span>
                         </div>
                       </div>
@@ -213,15 +244,13 @@ const MyTickets = () => {
                       View Event Details
                     </Link>
 
-                    {!isEventPast(ticket.event.date) && (
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => window.print()}
-                      >
-                        <i className="fas fa-print"></i>
-                        Print Ticket
-                      </button>
-                    )}
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => handlePrintTicket(ticket._id)}
+                    >
+                      <i className="fas fa-print"></i>
+                      Print Ticket
+                    </button>
                   </div>
 
                   {/* QR Code placeholder */}

@@ -238,3 +238,7 @@ public/
 # Temporary folders
 tmp/
 temp/ 
+
+# Miscellenious
+
+Notes.txt

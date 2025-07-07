@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../App";
+import {
+  EAST_AFRICAN_COUNTRIES,
+  DEFAULT_COUNTRY,
+  validatePhoneNumber,
+  getCountryByCode,
+} from "../utils/eastAfricanCountries";
 import "./Auth.css";
 
 const Register = () => {
@@ -12,6 +18,9 @@ const Register = () => {
     email: "",
     password: "",
     confirmPassword: "",
+    fullName: "",
+    phone: "",
+    country: DEFAULT_COUNTRY.code,
   });
 
   const [errors, setErrors] = useState({});
@@ -31,6 +40,19 @@ const Register = () => {
         [name]: "",
       }));
     }
+
+    // Auto-format phone number when country changes
+    if (name === "country" && formData.phone) {
+      const country = getCountryByCode(value);
+      if (country && !formData.phone.startsWith(country.countryCode)) {
+        // Clear phone if it doesn't match new country
+        setFormData((prev) => ({
+          ...prev,
+          phone: "",
+          [name]: value,
+        }));
+      }
+    }
   };
 
   const validateForm = () => {
@@ -48,10 +70,31 @@ const Register = () => {
       newErrors.email = "Email is invalid";
     }
 
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = "Full name is required";
+    } else if (formData.fullName.trim().length < 2) {
+      newErrors.fullName = "Full name must be at least 2 characters";
+    }
+
+    if (!formData.country) {
+      newErrors.country = "Please select your country";
+    }
+
+    if (
+      formData.phone &&
+      !validatePhoneNumber(formData.phone, formData.country)
+    ) {
+      const country = getCountryByCode(formData.country);
+      newErrors.phone = `Please enter a valid ${country.name} phone number (e.g., ${country.exampleNumber})`;
+    }
+
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/.test(formData.password)) {
+      newErrors.password =
+        "Password must contain at least one uppercase letter, one lowercase letter, and one number";
     }
 
     if (!formData.confirmPassword) {
@@ -79,6 +122,9 @@ const Register = () => {
         username: formData.username,
         email: formData.email,
         password: formData.password,
+        fullName: formData.fullName,
+        phone: formData.phone || undefined, // Only send phone if provided
+        country: formData.country,
       });
 
       if (result.success) {
@@ -98,7 +144,7 @@ const Register = () => {
       <div className="auth-container">
         <div className="auth-header">
           <h1>Create Account</h1>
-          <p>Join us to discover and book amazing events</p>
+          <p>Join us to discover and book amazing events across East Africa</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -148,6 +194,76 @@ const Register = () => {
           </div>
 
           <div className="form-group">
+            <label htmlFor="fullName">Full Name</label>
+            <div className="input-group">
+              <i className="fas fa-user-circle"></i>
+              <input
+                type="text"
+                id="fullName"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                placeholder="Enter your full name"
+                className={errors.fullName ? "error" : ""}
+                disabled={loading}
+              />
+            </div>
+            {errors.fullName && (
+              <span className="error-text">{errors.fullName}</span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="country">Country</label>
+            <div className="input-group">
+              <i className="fas fa-globe-africa"></i>
+              <select
+                id="country"
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                className={errors.country ? "error" : ""}
+                disabled={loading}
+              >
+                {EAST_AFRICAN_COUNTRIES.map((country) => (
+                  <option key={country.code} value={country.code}>
+                    {country.flag} {country.name} ({country.countryCode})
+                  </option>
+                ))}
+              </select>
+            </div>
+            {errors.country && (
+              <span className="error-text">{errors.country}</span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="phone">
+              Phone Number <span className="optional">(Optional)</span>
+            </label>
+            <div className="input-group">
+              <i className="fas fa-phone"></i>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder={getCountryByCode(formData.country).exampleNumber}
+                className={errors.phone ? "error" : ""}
+                disabled={loading}
+              />
+            </div>
+            <div className="field-hint">
+              <small>
+                <i className="fas fa-info-circle"></i>
+                Format: {getCountryByCode(formData.country).phoneFormat}
+              </small>
+            </div>
+            {errors.phone && <span className="error-text">{errors.phone}</span>}
+          </div>
+
+          <div className="form-group">
             <label htmlFor="password">Password</label>
             <div className="input-group">
               <i className="fas fa-lock"></i>
@@ -161,6 +277,13 @@ const Register = () => {
                 className={errors.password ? "error" : ""}
                 disabled={loading}
               />
+            </div>
+            <div className="password-requirements">
+              <small>
+                <i className="fas fa-info-circle"></i>
+                Password must be at least 6 characters and contain uppercase,
+                lowercase, and number
+              </small>
             </div>
             {errors.password && (
               <span className="error-text">{errors.password}</span>

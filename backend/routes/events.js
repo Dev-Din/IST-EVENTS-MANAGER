@@ -1,5 +1,6 @@
 const express = require("express");
 const { body, query } = require("express-validator");
+const { EVENT_CURRENCIES } = require("../utils/eastAfricanCountries");
 const {
   protect,
   requireAdmin,
@@ -45,8 +46,11 @@ const eventValidation = [
     .isLength({ min: 3, max: 300 })
     .withMessage("Event location must be between 3 and 300 characters"),
   body("charges")
-    .isNumeric({ min: 0, max: 10000 })
-    .withMessage("Event charges must be between 0 and 10000"),
+    .isNumeric({ min: 0, max: 10000000 })
+    .withMessage("Event charges must be between 0 and 10,000,000"),
+  body("currency")
+    .isIn(EVENT_CURRENCIES.map((c) => c.code))
+    .withMessage("Please select a valid currency"),
   body("capacity")
     .isInt({ min: 1, max: 100000 })
     .withMessage("Event capacity must be between 1 and 100000"),

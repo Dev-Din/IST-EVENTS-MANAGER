@@ -1,7 +1,7 @@
 
 
 
-> Build a fullstack secure Event Organising System using:
+> Build a fullstack secure LegitEvents™ platform using:
 >
 >  Frontend: React.js
 >  Backend: Node.js + Express
@@ -248,20 +248,20 @@ frontend/
 │   ├── components/
 │   │   ├── Navbar.js
 │   │   ├── EventCard.js
-│   ├── pages/
-│   │   ├── Home.js
-│   │   ├── Login.js
-│   │   ├── Register.js
-│   │   ├── AdminDashboard.js
-│   │   ├── SubAdminDashboard.js
-│   │   ├── Purchase.js
-│   │   ├── MyTickets.js
-│   ├── routes/
-│   │   └── AppRoutes.js
-│   ├── services/
-│   │   └── api.js
-│   ├── App.js
-│   └── index.js
+│   │   ├── pages/
+│   │   │   ├── Home.js
+│   │   │   ├── Login.js
+│   │   │   ├── Register.js
+│   │   │   ├── AdminDashboard.js
+│   │   │   ├── SubAdminDashboard.js
+│   │   │   ├── Purchase.js
+│   │   │   ├── MyTickets.js
+│   │   ├── routes/
+│   │   │   └── AppRoutes.js
+│   │   ├── services/
+│   │   │   └── api.js
+│   │   ├── App.js
+│   │   └── index.js
 ```
 
   React Router Setup Example (`AppRoutes.js`)

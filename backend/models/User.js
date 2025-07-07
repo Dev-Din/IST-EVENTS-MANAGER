@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const {
+  EAST_AFRICAN_COUNTRIES,
+  DEFAULT_COUNTRY,
+  validatePhoneNumber,
+  EAST_AFRICAN_PHONE_PATTERN,
+} = require("../utils/eastAfricanCountries");
 
 const UserSchema = new mongoose.Schema(
   {
@@ -36,7 +42,29 @@ const UserSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
-      match: [/^\+?[\d\s\-\(\)]+$/, "Please enter a valid phone number"],
+      validate: {
+        validator: function (phone) {
+          if (!phone) return true; // Phone is optional
+          return EAST_AFRICAN_PHONE_PATTERN.test(phone.replace(/\s/g, ""));
+        },
+        message:
+          "Please enter a valid East African phone number (e.g., +254 712 345 678)",
+      },
+    },
+    country: {
+      type: String,
+      enum: EAST_AFRICAN_COUNTRIES.map((c) => c.code),
+      default: DEFAULT_COUNTRY.code,
+      required: [true, "Country selection is required"],
+    },
+    currency: {
+      type: String,
+      default: function () {
+        const country = EAST_AFRICAN_COUNTRIES.find(
+          (c) => c.code === this.country
+        );
+        return country ? country.currency : DEFAULT_COUNTRY.currency;
+      },
     },
     role: {
       type: String,
@@ -122,8 +150,9 @@ UserSchema.pre("save", async function (next) {
   }
 });
 
-// Update permissions when role changes
+// Update permissions when role changes and set currency based on country
 UserSchema.pre("save", function (next) {
+  // Update permissions based on role
   if (this.isModified("role")) {
     switch (this.role) {
       case "super-admin":
@@ -142,6 +171,15 @@ UserSchema.pre("save", function (next) {
         this.permissions = [];
     }
   }
+
+  // Set currency based on country
+  if (this.isModified("country") || this.isNew) {
+    const country = EAST_AFRICAN_COUNTRIES.find((c) => c.code === this.country);
+    if (country) {
+      this.currency = country.currency;
+    }
+  }
+
   next();
 });
 
@@ -207,6 +245,27 @@ UserSchema.methods.updateLastLogin = function () {
 // Check if user has permission
 UserSchema.methods.hasPermission = function (permission) {
   return this.permissions.includes(permission) || this.role === "super-admin";
+};
+
+// Get user's country information
+UserSchema.methods.getCountryInfo = function () {
+  return (
+    EAST_AFRICAN_COUNTRIES.find((c) => c.code === this.country) ||
+    DEFAULT_COUNTRY
+  );
+};
+
+// Validate phone number against user's country
+UserSchema.methods.validatePhoneForCountry = function (phone) {
+  if (!phone) return true; // Phone is optional
+  return validatePhoneNumber(phone, this.country);
+};
+
+// Format phone number according to country format
+UserSchema.methods.getFormattedPhone = function () {
+  if (!this.phone) return "";
+  const countryInfo = this.getCountryInfo();
+  return this.phone || "";
 };
 
 // Static method to get users by role

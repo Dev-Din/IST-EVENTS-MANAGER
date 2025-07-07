@@ -56,6 +56,17 @@
   gap: 2rem;
 }
 
+.events-grid .event-card {
+  min-width: 0;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.events-grid .event-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1), 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
 /* Event Form Styles */
 .event-form {
   padding: 1rem;
@@ -114,8 +125,12 @@
   }
 
   .events-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1rem;
+  }
+
+  .events-grid .event-card {
+    min-width: 0;
   }
 
   .form-actions {
@@ -130,5 +145,22 @@
 
   .empty-state i {
     font-size: 3rem;
+  }
+
+  .events-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .events-grid .event-card {
+    min-width: 0;
+  }
+}
+
+/* Medium screens - Enhanced responsive grid for ManageEvents */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .events-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
   }
 }

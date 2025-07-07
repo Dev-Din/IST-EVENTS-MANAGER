@@ -23,7 +23,6 @@ const SubAdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-
       // Fetch events (in real app, this would be filtered to sub-admin's events)
       const eventsResponse = await eventsAPI
         .getAll()

@@ -6,7 +6,6 @@ const TicketSchema = new mongoose.Schema(
     ticketNumber: {
       type: String,
       unique: true,
-      required: true,
     },
     event: {
       type: mongoose.Schema.Types.ObjectId,
@@ -36,7 +35,13 @@ const TicketSchema = new mongoose.Schema(
       phone: {
         type: String,
         trim: true,
-        match: [/^\+?[\d\s\-\(\)]+$/, "Please enter a valid phone number"],
+        validate: {
+          validator: function (v) {
+            // Only validate if phone number is provided
+            return !v || /^\+?[\d\s\-\(\)]+$/.test(v);
+          },
+          message: "Please enter a valid phone number",
+        },
       },
       specialRequirements: String,
     },
@@ -53,7 +58,6 @@ const TicketSchema = new mongoose.Schema(
     },
     totalAmount: {
       type: Number,
-      required: [true, "Total amount is required"],
       min: [0, "Total amount cannot be negative"],
     },
     ticketType: {
@@ -68,6 +72,7 @@ const TicketSchema = new mongoose.Schema(
           "credit_card",
           "debit_card",
           "paypal",
+          "mpesa",
           "bank_transfer",
           "cash",
           "free",
@@ -242,11 +247,7 @@ TicketSchema.pre("save", function (next) {
       this.validFrom = new Date();
     }
 
-    if (!this.validUntil && this.event) {
-      // Valid until 2 hours after event end time (or event date + 6 hours if no end time)
-      this.validUntil = new Date(this.event.date);
-      this.validUntil.setHours(this.validUntil.getHours() + 6);
-    }
+    // Note: validUntil will be set in the controller where we have access to event data
   }
 
   next();
@@ -259,6 +260,15 @@ TicketSchema.pre("save", function (next) {
     this.isModified("unitPrice") ||
     this.isNew
   ) {
+    // Ensure we have the required values
+    if (!this.quantity || !this.unitPrice) {
+      return next(
+        new Error(
+          "Quantity and unitPrice are required for totalAmount calculation"
+        )
+      );
+    }
+
     this.totalAmount = this.quantity * this.unitPrice;
 
     // Add fees

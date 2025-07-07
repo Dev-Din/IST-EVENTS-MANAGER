@@ -6,7 +6,7 @@ import { adminAPI } from "../services/api";
 import "./ManageUsers.css";
 
 const ManageSubAdmins = () => {
-  const { user, isSuperAdmin } = useAuth();
+  const { isSuperAdmin } = useAuth();
   const [subAdmins, setSubAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,34 +35,20 @@ const ManageSubAdmins = () => {
     try {
       setLoading(true);
       const response = await adminAPI.getSubAdmins();
-      setSubAdmins(response.data.subAdmins || []);
+
+      // Ensure we have valid data and filter out any invalid entries
+      const validSubAdmins = (response.data.subAdmins || []).filter(
+        (admin) => admin && admin._id && admin.username
+      );
+
+      setSubAdmins(validSubAdmins);
       setError("");
     } catch (error) {
       console.error("Error fetching sub-admins:", error);
-      setError("Failed to load sub-admins");
-      // Mock data for demo purposes
-      setSubAdmins([
-        {
-          _id: "1",
-          username: "subadmin1",
-          email: "subadmin1@example.com",
-          fullName: "John Smith",
-          phone: "+1-555-0123",
-          permissions: ["events", "tickets"],
-          isActive: true,
-          createdAt: "2024-01-15T10:30:00Z",
-        },
-        {
-          _id: "2",
-          username: "subadmin2",
-          email: "subadmin2@example.com",
-          fullName: "Sarah Johnson",
-          phone: "+1-555-0456",
-          permissions: ["events"],
-          isActive: false,
-          createdAt: "2024-01-20T14:15:00Z",
-        },
-      ]);
+      setError(
+        "Failed to load sub-admins. Please check your connection and try again."
+      );
+      setSubAdmins([]); // Reset to empty array on error
     } finally {
       setLoading(false);
     }
@@ -98,17 +84,21 @@ const ManageSubAdmins = () => {
 
   const handleToggleStatus = async (subAdminId, currentStatus) => {
     try {
-      await adminAPI.toggleSubAdminStatus(subAdminId, !currentStatus);
-      setSubAdmins(
-        subAdmins.map((admin) =>
-          admin._id === subAdminId
-            ? { ...admin, isActive: !currentStatus }
-            : admin
-        )
+      await adminAPI.toggleSubAdminStatus(subAdminId);
+      setSubAdmins((prevSubAdmins) =>
+        prevSubAdmins
+          .filter((admin) => admin && admin._id) // Filter out any invalid entries
+          .map((admin) =>
+            admin._id === subAdminId
+              ? { ...admin, isActive: !currentStatus }
+              : admin
+          )
       );
     } catch (error) {
       console.error("Error toggling sub-admin status:", error);
-      alert("Failed to update sub-admin status");
+      const errorMessage =
+        error.response?.data?.message || "Failed to update sub-admin status";
+      alert(errorMessage);
     }
   };
 
@@ -120,10 +110,16 @@ const ManageSubAdmins = () => {
     ) {
       try {
         await adminAPI.deleteSubAdmin(subAdminId);
-        setSubAdmins(subAdmins.filter((admin) => admin._id !== subAdminId));
+        setSubAdmins((prevSubAdmins) =>
+          prevSubAdmins.filter(
+            (admin) => admin && admin._id && admin._id !== subAdminId
+          )
+        );
       } catch (error) {
         console.error("Error deleting sub-admin:", error);
-        alert("Failed to delete sub-admin");
+        const errorMessage =
+          error.response?.data?.message || "Failed to delete sub-admin";
+        alert(errorMessage);
       }
     }
   };
@@ -152,21 +148,32 @@ const ManageSubAdmins = () => {
 
       if (editingUser) {
         await adminAPI.updateSubAdmin(editingUser._id, userData);
-        setSubAdmins(
-          subAdmins.map((admin) =>
-            admin._id === editingUser._id ? { ...admin, ...userData } : admin
-          )
+        setSubAdmins((prevSubAdmins) =>
+          prevSubAdmins
+            .filter((admin) => admin && admin._id) // Filter out any invalid entries
+            .map((admin) =>
+              admin._id === editingUser._id ? { ...admin, ...userData } : admin
+            )
         );
       } else {
         const response = await adminAPI.createSubAdmin(userData);
-        setSubAdmins([response.data.subAdmin, ...subAdmins]);
+        // Ensure the new sub-admin has valid data before adding to state
+        if (response.data.subAdmin && response.data.subAdmin._id) {
+          setSubAdmins((prevSubAdmins) => [
+            response.data.subAdmin,
+            ...prevSubAdmins,
+          ]);
+        }
       }
 
       setShowModal(false);
       setEditingUser(null);
     } catch (error) {
       console.error("Error saving sub-admin:", error);
-      alert("Failed to save sub-admin");
+      const errorMessage =
+        error.response?.data?.message ||
+        `Failed to ${editingUser ? "update" : "create"} sub-admin`;
+      alert(errorMessage);
     }
   };
 
@@ -262,83 +269,91 @@ const ManageSubAdmins = () => {
                 </tr>
               </thead>
               <tbody>
-                {subAdmins.map((admin) => (
-                  <tr key={admin._id}>
-                    <td>
-                      <div className="user-info">
-                        <div className="user-avatar">
-                          <i className="fas fa-user"></i>
-                        </div>
-                        <div>
-                          <div className="user-name">
-                            {admin.fullName || admin.username}
+                {subAdmins
+                  .filter((admin) => admin && admin._id)
+                  .map((admin) => (
+                    <tr key={admin._id}>
+                      <td>
+                        <div className="user-info">
+                          <div className="user-avatar">
+                            <i className="fas fa-user"></i>
                           </div>
-                          <div className="user-username">@{admin.username}</div>
+                          <div>
+                            <div className="user-name">
+                              {admin.fullName ||
+                                admin.username ||
+                                "Unknown User"}
+                            </div>
+                            <div className="user-username">
+                              @{admin.username || "unknown"}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="contact-info">
-                        <div>{admin.email}</div>
-                        {admin.phone && (
-                          <div className="phone">{admin.phone}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="permissions">
-                        {admin.permissions?.map((permission) => (
-                          <span key={permission} className="permission-badge">
-                            {permission}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>
-                      <span
-                        className={`status-badge ${
-                          admin.isActive ? "active" : "inactive"
-                        }`}
-                      >
-                        {admin.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td>{formatDate(admin.createdAt)}</td>
-                    <td>
-                      <div className="action-buttons">
-                        <button
-                          onClick={() => handleEdit(admin)}
-                          className="btn btn-sm btn-outline"
-                          title="Edit"
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleToggleStatus(admin._id, admin.isActive)
-                          }
-                          className={`btn btn-sm ${
-                            admin.isActive ? "btn-outline" : "btn-success"
+                      </td>
+                      <td>
+                        <div className="contact-info">
+                          <div>{admin.email || "No email"}</div>
+                          {admin.phone && (
+                            <div className="phone">{admin.phone}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="permissions">
+                          {admin.permissions?.map((permission) => (
+                            <span key={permission} className="permission-badge">
+                              {permission}
+                            </span>
+                          )) || (
+                            <span className="text-muted">No permissions</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <span
+                          className={`status-badge ${
+                            admin.isActive ? "active" : "inactive"
                           }`}
-                          title={admin.isActive ? "Deactivate" : "Activate"}
                         >
-                          <i
-                            className={`fas ${
-                              admin.isActive ? "fa-ban" : "fa-check"
+                          {admin.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td>{formatDate(admin.createdAt)}</td>
+                      <td>
+                        <div className="action-buttons">
+                          <button
+                            onClick={() => handleEdit(admin)}
+                            className="btn btn-sm btn-outline"
+                            title="Edit"
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleToggleStatus(admin._id, admin.isActive)
+                            }
+                            className={`btn btn-sm ${
+                              admin.isActive ? "btn-outline" : "btn-success"
                             }`}
-                          ></i>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(admin._id)}
-                          className="btn btn-sm btn-danger"
-                          title="Delete"
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                            title={admin.isActive ? "Deactivate" : "Activate"}
+                          >
+                            <i
+                              className={`fas ${
+                                admin.isActive ? "fa-ban" : "fa-check"
+                              }`}
+                            ></i>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(admin._id)}
+                            className="btn btn-sm btn-danger"
+                            title="Delete"
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

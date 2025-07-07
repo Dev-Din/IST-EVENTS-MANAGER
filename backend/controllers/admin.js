@@ -3,6 +3,7 @@ const User = require("../models/User");
 const Event = require("../models/Event");
 const Ticket = require("../models/Ticket");
 const asyncHandler = require("../utils/asyncHandler");
+const PDFGenerator = require("../utils/pdfGenerator");
 
 // @desc    Get dashboard statistics
 // @route   GET /api/admin/dashboard
@@ -740,18 +741,486 @@ const getReports = asyncHandler(async (req, res, next) => {
 // @access  Private (Admin with reports permission)
 const exportData = asyncHandler(async (req, res, next) => {
   const { dataType } = req.params;
-  const { startDate, endDate, format = "json" } = req.body;
+  const { startDate, endDate, format = "csv" } = req.body;
 
-  // This is a placeholder for data export functionality
-  // In a real implementation, you would generate CSV/Excel files
+  let dateFilter = {};
+  if (startDate && endDate) {
+    dateFilter = {
+      createdAt: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      },
+    };
+  }
 
-  res.status(200).json({
-    success: true,
-    message: `${dataType} data export initiated`,
-    format,
-    dateRange: { startDate, endDate },
-    downloadUrl: `/api/admin/download/${dataType}-${Date.now()}.${format}`,
-  });
+  let eventFilter = {};
+  if (req.user.role === "sub-admin") {
+    eventFilter.createdBy = req.user._id;
+  }
+
+  // Format date range for display
+  const formatDateRange = () => {
+    if (startDate && endDate) {
+      const start = new Date(startDate).toLocaleDateString();
+      const end = new Date(endDate).toLocaleDateString();
+      return `${start} - ${end}`;
+    }
+    return "All Time";
+  };
+
+  try {
+    if (format === "pdf") {
+      // Generate PDF using PDFGenerator
+      const pdfGenerator = new PDFGenerator();
+
+      switch (dataType) {
+        case "sales":
+          const salesData = await Ticket.aggregate([
+            {
+              $lookup: {
+                from: "events",
+                localField: "event",
+                foreignField: "_id",
+                as: "eventDetails",
+              },
+            },
+            {
+              $match: {
+                ...dateFilter,
+                status: { $in: ["confirmed", "used"] },
+                ...(req.user.role === "sub-admin" && {
+                  "eventDetails.createdBy": req.user._id,
+                }),
+              },
+            },
+            {
+              $group: {
+                _id: {
+                  $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+                },
+                totalSales: { $sum: "$totalAmount" },
+                ticketCount: { $sum: "$quantity" },
+              },
+            },
+            { $sort: { _id: 1 } },
+          ]);
+
+          pdfGenerator.generateSalesReport(salesData, formatDateRange());
+          break;
+
+        case "events":
+          const eventsData = await Event.aggregate([
+            {
+              $match: {
+                ...eventFilter,
+                ...dateFilter,
+              },
+            },
+            {
+              $lookup: {
+                from: "tickets",
+                localField: "_id",
+                foreignField: "event",
+                as: "tickets",
+              },
+            },
+            {
+              $project: {
+                name: 1,
+                date: 1,
+                location: 1,
+                category: 1,
+                capacity: 1,
+                availableTickets: 1,
+                charges: 1,
+                currency: 1,
+                status: 1,
+                ticketsSold: { $subtract: ["$capacity", "$availableTickets"] },
+                revenue: {
+                  $sum: {
+                    $map: {
+                      input: {
+                        $filter: {
+                          input: "$tickets",
+                          cond: {
+                            $in: ["$$this.status", ["confirmed", "used"]],
+                          },
+                        },
+                      },
+                      as: "ticket",
+                      in: "$$ticket.totalAmount",
+                    },
+                  },
+                },
+              },
+            },
+            { $sort: { date: -1 } },
+          ]);
+
+          pdfGenerator.generateEventsReport(eventsData, formatDateRange());
+          break;
+
+        case "comprehensive":
+          const [ticketData, eventData, categoryData] = await Promise.all([
+            // Ticket sales summary
+            Ticket.aggregate([
+              {
+                $lookup: {
+                  from: "events",
+                  localField: "event",
+                  foreignField: "_id",
+                  as: "eventDetails",
+                },
+              },
+              {
+                $match: {
+                  ...dateFilter,
+                  status: { $in: ["confirmed", "used"] },
+                  ...(req.user.role === "sub-admin" && {
+                    "eventDetails.createdBy": req.user._id,
+                  }),
+                },
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalRevenue: { $sum: "$totalAmount" },
+                  totalTickets: { $sum: "$quantity" },
+                  averageTicketPrice: { $avg: "$totalAmount" },
+                },
+              },
+            ]),
+
+            // Top events
+            Event.aggregate([
+              { $match: eventFilter },
+              {
+                $lookup: {
+                  from: "tickets",
+                  localField: "_id",
+                  foreignField: "event",
+                  as: "tickets",
+                },
+              },
+              {
+                $project: {
+                  name: 1,
+                  ticketsSold: {
+                    $subtract: ["$capacity", "$availableTickets"],
+                  },
+                  revenue: {
+                    $sum: {
+                      $map: {
+                        input: {
+                          $filter: {
+                            input: "$tickets",
+                            cond: {
+                              $in: ["$$this.status", ["confirmed", "used"]],
+                            },
+                          },
+                        },
+                        as: "ticket",
+                        in: "$$ticket.totalAmount",
+                      },
+                    },
+                  },
+                },
+              },
+              { $sort: { revenue: -1 } },
+              { $limit: 10 },
+            ]),
+
+            // Events by category
+            Event.aggregate([
+              { $match: { ...eventFilter, ...dateFilter } },
+              {
+                $group: {
+                  _id: "$category",
+                  count: { $sum: 1 },
+                },
+              },
+            ]),
+          ]);
+
+          const comprehensiveData = {
+            summary: ticketData[0] || {
+              totalRevenue: 0,
+              totalTickets: 0,
+              averageTicketPrice: 0,
+            },
+            topEvents: eventData,
+            eventsByCategory: categoryData,
+          };
+
+          pdfGenerator.generateComprehensiveReport(
+            comprehensiveData,
+            formatDateRange()
+          );
+          break;
+
+        default:
+          return res.status(400).json({
+            success: false,
+            message: "Invalid data type for export",
+          });
+      }
+
+      // Set response headers for PDF download
+      const filename = `${dataType}-report-${
+        new Date().toISOString().split("T")[0]
+      }.pdf`;
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`
+      );
+      res.setHeader("Cache-Control", "no-cache");
+
+      // Pipe the PDF to response
+      pdfGenerator.finalize().pipe(res);
+    } else {
+      // CSV Export (existing logic)
+      let csvData = "";
+      let filename = "";
+
+      switch (dataType) {
+        case "sales":
+          const salesData = await Ticket.aggregate([
+            {
+              $lookup: {
+                from: "events",
+                localField: "event",
+                foreignField: "_id",
+                as: "eventDetails",
+              },
+            },
+            {
+              $match: {
+                ...dateFilter,
+                status: { $in: ["confirmed", "used"] },
+                ...(req.user.role === "sub-admin" && {
+                  "eventDetails.createdBy": req.user._id,
+                }),
+              },
+            },
+            {
+              $project: {
+                date: {
+                  $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+                },
+                eventName: { $arrayElemAt: ["$eventDetails.name", 0] },
+                quantity: 1,
+                totalAmount: 1,
+                status: 1,
+                purchaserEmail: 1,
+              },
+            },
+            { $sort: { createdAt: -1 } },
+          ]);
+
+          csvData = "Date,Event Name,Quantity,Amount,Status,Purchaser Email\n";
+          salesData.forEach((sale) => {
+            csvData += `${sale.date},"${sale.eventName || "Unknown"}",${
+              sale.quantity
+            },${sale.totalAmount},${sale.status},"${
+              sale.purchaserEmail || "N/A"
+            }"\n`;
+          });
+          filename = `sales-report-${
+            new Date().toISOString().split("T")[0]
+          }.csv`;
+          break;
+
+        case "events":
+          const eventsData = await Event.aggregate([
+            {
+              $match: {
+                ...eventFilter,
+                ...dateFilter,
+              },
+            },
+            {
+              $lookup: {
+                from: "tickets",
+                localField: "_id",
+                foreignField: "event",
+                as: "tickets",
+              },
+            },
+            {
+              $lookup: {
+                from: "users",
+                localField: "createdBy",
+                foreignField: "_id",
+                as: "creator",
+              },
+            },
+            {
+              $project: {
+                name: 1,
+                date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+                location: 1,
+                category: 1,
+                capacity: 1,
+                availableTickets: 1,
+                charges: 1,
+                currency: 1,
+                status: 1,
+                creatorName: { $arrayElemAt: ["$creator.fullName", 0] },
+                ticketsSold: { $subtract: ["$capacity", "$availableTickets"] },
+                revenue: {
+                  $sum: {
+                    $map: {
+                      input: {
+                        $filter: {
+                          input: "$tickets",
+                          cond: {
+                            $in: ["$$this.status", ["confirmed", "used"]],
+                          },
+                        },
+                      },
+                      as: "ticket",
+                      in: "$$ticket.totalAmount",
+                    },
+                  },
+                },
+              },
+            },
+            { $sort: { date: -1 } },
+          ]);
+
+          csvData =
+            "Name,Date,Location,Category,Capacity,Available,Sold,Charges,Currency,Revenue,Status,Creator\n";
+          eventsData.forEach((event) => {
+            csvData += `"${event.name}",${event.date},"${event.location}","${
+              event.category
+            }",${event.capacity},${event.availableTickets},${
+              event.ticketsSold
+            },${event.charges},"${event.currency}",${event.revenue},"${
+              event.status
+            }","${event.creatorName || "N/A"}"\n`;
+          });
+          filename = `events-report-${
+            new Date().toISOString().split("T")[0]
+          }.csv`;
+          break;
+
+        case "comprehensive":
+          // Overview report with multiple sections
+          const [ticketData, eventData, userData] = await Promise.all([
+            // Ticket sales summary
+            Ticket.aggregate([
+              {
+                $lookup: {
+                  from: "events",
+                  localField: "event",
+                  foreignField: "_id",
+                  as: "eventDetails",
+                },
+              },
+              {
+                $match: {
+                  ...dateFilter,
+                  status: { $in: ["confirmed", "used"] },
+                  ...(req.user.role === "sub-admin" && {
+                    "eventDetails.createdBy": req.user._id,
+                  }),
+                },
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalRevenue: { $sum: "$totalAmount" },
+                  totalTickets: { $sum: "$quantity" },
+                  averageTicketPrice: { $avg: "$totalAmount" },
+                },
+              },
+            ]),
+
+            // Events summary
+            Event.aggregate([
+              { $match: { ...eventFilter, ...dateFilter } },
+              {
+                $group: {
+                  _id: "$status",
+                  count: { $sum: 1 },
+                },
+              },
+            ]),
+
+            // User registrations (if super admin)
+            req.user.role === "super-admin"
+              ? User.aggregate([
+                  { $match: { ...dateFilter, role: "client" } },
+                  {
+                    $group: {
+                      _id: {
+                        $dateToString: { format: "%Y-%m", date: "$createdAt" },
+                      },
+                      newUsers: { $sum: 1 },
+                    },
+                  },
+                  { $sort: { _id: 1 } },
+                ])
+              : [],
+          ]);
+
+          const summary = ticketData[0] || {
+            totalRevenue: 0,
+            totalTickets: 0,
+            averageTicketPrice: 0,
+          };
+
+          csvData = "COMPREHENSIVE REPORT\n\n";
+          csvData += "SALES SUMMARY\n";
+          csvData += "Metric,Value\n";
+          csvData += `Total Revenue,${summary.totalRevenue}\n`;
+          csvData += `Total Tickets Sold,${summary.totalTickets}\n`;
+          csvData += `Average Ticket Price,${summary.averageTicketPrice}\n\n`;
+
+          csvData += "EVENTS BY STATUS\n";
+          csvData += "Status,Count\n";
+          eventData.forEach((item) => {
+            csvData += `${item._id},${item.count}\n`;
+          });
+
+          if (req.user.role === "super-admin" && userData.length > 0) {
+            csvData += "\nUSER REGISTRATIONS BY MONTH\n";
+            csvData += "Month,New Users\n";
+            userData.forEach((item) => {
+              csvData += `${item._id},${item.newUsers}\n`;
+            });
+          }
+
+          filename = `comprehensive-report-${
+            new Date().toISOString().split("T")[0]
+          }.csv`;
+          break;
+
+        default:
+          return res.status(400).json({
+            success: false,
+            message: "Invalid data type for export",
+          });
+      }
+
+      // Set response headers for CSV download
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`
+      );
+      res.setHeader("Cache-Control", "no-cache");
+
+      res.status(200).send(csvData);
+    }
+  } catch (error) {
+    console.error("Export error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate export file",
+    });
+  }
 });
 
 module.exports = {

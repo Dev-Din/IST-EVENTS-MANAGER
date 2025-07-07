@@ -1,7 +1,7 @@
 {
-  "name": "event-organiser-backend",
+  "name": "legitevents-backend",
   "version": "1.0.0",
-  "description": "Event Organising System Backend API",
+  "description": "LegitEvents™ Backend API - Event Management System",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -12,33 +12,35 @@
   "keywords": [
     "event",
     "management",
+    "legitevents",
     "nodejs",
     "express",
     "mongodb"
   ],
-  "author": "Event Organiser Team",
+  "author": "LegitEvents™ Team",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "mongoose": "^7.0.3",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.0",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
+    "express": "^4.18.2",
     "express-rate-limit": "^6.7.0",
-    "helmet": "^6.1.5",
-    "morgan": "^1.10.0",
     "express-validator": "^6.15.0",
+    "helmet": "^6.1.5",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.0.3",
+    "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.1",
-    "compression": "^1.7.4",
-    "cookie-parser": "^1.4.6"
+    "pdfkit": "^0.17.1"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22",
+    "@types/node": "^18.15.11",
     "jest": "^29.5.0",
-    "supertest": "^6.3.3",
-    "@types/node": "^18.15.11"
+    "nodemon": "^2.0.22",
+    "supertest": "^6.3.3"
   },
   "engines": {
     "node": ">=16.0.0",
