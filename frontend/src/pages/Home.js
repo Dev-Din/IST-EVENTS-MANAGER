@@ -61,7 +61,10 @@ const Home = () => {
       <div
         className="hero-section"
         style={{
-          background: `#dee6ff`,
+          backgroundImage: `url('/event-hero.png')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center center",
+          backgroundRepeat: "no-repeat",
         }}
       >
         <div className="hero-content">
