@@ -15,6 +15,9 @@ const {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  updatePreferences,
+  getProfileStats,
+  deleteAccount,
 } = require("../controllers/auth");
 
 const router = express.Router();
@@ -133,5 +136,10 @@ router.get("/me", getMe);
 router.put("/profile", updateProfile);
 router.put("/password", updatePasswordValidation, updatePassword);
 router.post("/logout", authRateLimit(100, 15 * 60 * 1000), protect, logout);
+
+// Profile management routes
+router.put("/preferences", updatePreferences);
+router.get("/profile-stats", getProfileStats);
+router.delete("/account", deleteAccount);
 
 module.exports = router;

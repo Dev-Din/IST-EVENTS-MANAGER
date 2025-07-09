@@ -74,7 +74,6 @@
   font-size: clamp(1.5rem, 4vw, 2.5rem);
   font-weight: 800;
   color: white;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 0 4px 8px rgba(0, 0, 0, 0.8);
   letter-spacing: 2px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
@@ -87,8 +86,6 @@
   font-weight: 900;
   margin-bottom: var(--spacing-lg);
   color: #ffffff;
-  text-shadow: 0 0 40px rgba(255, 255, 255, 0.9), 0 4px 16px rgba(0, 0, 0, 0.8),
-    0 8px 24px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(37, 99, 235, 0.5);
   letter-spacing: 1px;
 }
 
@@ -97,8 +94,6 @@
   margin-bottom: var(--spacing-2xl);
   opacity: 0.98;
   line-height: 1.6;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3), 0 2px 8px rgba(0, 0, 0, 0.9),
-    0 4px 16px rgba(0, 0, 0, 0.6), 0 1px 4px rgba(37, 99, 235, 0.3);
   font-weight: 500;
   color: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(1px);

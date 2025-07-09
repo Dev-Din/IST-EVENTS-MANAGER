@@ -25,11 +25,14 @@ const ManageClients = () => {
     try {
       setLoading(true);
       const response = await adminAPI.getClients();
-      setClients(response.data.clients || []);
+      const clientsData = response.data.clients || [];
+      setClients(clientsData);
       setError("");
     } catch (error) {
       console.error("Error fetching clients:", error);
-      setError("Failed to load clients. Please check your connection and try again.");
+      setError(
+        "Failed to load clients. Please check your connection and try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -57,13 +60,25 @@ const ManageClients = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    if (!dateString) return "Unknown Date";
+
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return "Invalid Date";
+      }
+
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid Date";
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -174,7 +189,10 @@ const ManageClients = () => {
             </div>
             <div className="summary-content">
               <h3>
-                {clients.reduce((sum, c) => sum + (c.ticketsPurchased || 0), 0)}
+                {clients.reduce(
+                  (sum, c) => sum + (c.stats?.totalTickets || 0),
+                  0
+                )}
               </h3>
               <p>Total Tickets Sold</p>
             </div>
@@ -187,7 +205,10 @@ const ManageClients = () => {
             <div className="summary-content">
               <h3>
                 {formatCurrency(
-                  clients.reduce((sum, c) => sum + (c.totalSpent || 0), 0)
+                  clients.reduce(
+                    (sum, c) => sum + (c.stats?.totalSpent || 0),
+                    0
+                  )
                 )}
               </h3>
               <p>Total Revenue</p>
@@ -234,7 +255,10 @@ const ManageClients = () => {
                             @{client.username}
                           </div>
                           <div className="user-meta">
-                            Joined {formatDate(client.registeredAt)}
+                            Joined{" "}
+                            {client.createdAt
+                              ? formatDate(client.createdAt)
+                              : "Unknown Date"}
                           </div>
                         </div>
                       </div>
@@ -251,11 +275,11 @@ const ManageClients = () => {
                       <div className="activity-info">
                         <div className="activity-stat">
                           <i className="fas fa-ticket-alt"></i>
-                          {client.ticketsPurchased || 0} tickets
+                          {client.stats?.totalTickets || 0} tickets
                         </div>
                         <div className="activity-stat">
                           <i className="fas fa-dollar-sign"></i>
-                          {formatCurrency(client.totalSpent || 0)}
+                          {formatCurrency(client.stats?.totalSpent || 0)}
                         </div>
                       </div>
                     </td>

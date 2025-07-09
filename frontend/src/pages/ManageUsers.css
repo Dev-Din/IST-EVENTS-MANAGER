@@ -10,12 +10,12 @@
 }
 
 .page-header h1 {
-  color: var(--text-dark);
+  color: var(--gray-900);
   margin-bottom: 0.5rem;
 }
 
 .page-header p {
-  color: var(--text-muted);
+  color: var(--gray-600);
   font-size: 1.1rem;
 }
 
@@ -30,7 +30,7 @@
 }
 
 .users-count {
-  color: var(--text-muted);
+  color: var(--gray-600);
   font-weight: 500;
 }
 
@@ -46,13 +46,13 @@
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-muted);
+  color: var(--gray-600);
 }
 
 .search-box input {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 2px solid var(--border-light);
+  border: 2px solid var(--gray-300);
   border-radius: var(--border-radius);
   font-size: 1rem;
   transition: border-color 0.3s ease;
@@ -60,12 +60,12 @@
 
 .search-box input:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: var(--primary-color);
 }
 
 .filter-select {
   padding: 0.75rem 1rem;
-  border: 2px solid var(--border-light);
+  border: 2px solid var(--gray-300);
   border-radius: var(--border-radius);
   font-size: 1rem;
   background-color: white;
@@ -112,7 +112,7 @@
 .summary-content h3 {
   font-size: clamp(1.3rem, 3.5vw, 1.8rem);
   font-weight: 700;
-  color: var(--text-dark);
+  color: var(--gray-900);
   margin-bottom: 0.25rem;
   word-break: break-word;
   overflow-wrap: break-word;
@@ -120,7 +120,7 @@
 }
 
 .summary-content p {
-  color: var(--text-muted);
+  color: var(--gray-600);
   font-size: 0.9rem;
 }
 
@@ -141,13 +141,13 @@
 .users-table td {
   padding: 1rem;
   text-align: left;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--gray-300);
 }
 
 .users-table th {
-  background-color: var(--bg-light);
+  background-color: var(--gray-100);
   font-weight: 600;
-  color: var(--text-dark);
+  color: var(--gray-900);
 }
 
 .user-info {
@@ -170,16 +170,16 @@
 
 .user-name {
   font-weight: 600;
-  color: var(--text-dark);
+  color: var(--gray-900);
 }
 
 .user-username {
-  color: var(--text-muted);
+  color: var(--gray-600);
   font-size: 0.9rem;
 }
 
 .user-meta {
-  color: var(--text-muted);
+  color: var(--gray-600);
   font-size: 0.8rem;
   margin-top: 0.25rem;
 }
@@ -189,7 +189,7 @@
 }
 
 .phone {
-  color: var(--text-muted);
+  color: var(--gray-600);
   font-size: 0.9rem;
 }
 
@@ -236,12 +236,12 @@
 }
 
 .status-badge.active {
-  background: var(--success);
+  background: var(--success-color);
   color: white;
 }
 
 .status-badge.inactive {
-  background: var(--text-muted);
+  background: #ff2e2e;
   color: white;
 }
 
@@ -278,7 +278,7 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: var(--text-dark);
+  color: var(--gray-900);
 }
 
 .form-group input,
@@ -286,7 +286,7 @@
 .form-group select {
   width: 100%;
   padding: 0.75rem;
-  border: 2px solid var(--border-light);
+  border: 2px solid var(--gray-300);
   border-radius: var(--border-radius);
   font-size: 1rem;
   transition: border-color 0.3s ease;
@@ -296,7 +296,7 @@
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: var(--primary-color);
 }
 
 .permissions-grid {
@@ -311,15 +311,15 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  border: 2px solid var(--border-light);
+  border: 2px solid var(--gray-300);
   border-radius: var(--border-radius);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .permission-option:hover {
-  border-color: var(--primary);
-  background-color: var(--bg-light);
+  border-color: var(--primary-color);
+  background-color: var(--gray-100);
 }
 
 .permission-option input[type="checkbox"] {
@@ -333,40 +333,40 @@
   justify-content: flex-end;
   margin-top: 2rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid var(--gray-300);
 }
 
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  color: var(--text-muted);
+  color: var(--gray-600);
 }
 
 .empty-state i {
   font-size: 4rem;
-  color: var(--primary);
+  color: var(--primary-color);
   margin-bottom: 1rem;
 }
 
 .empty-state h3 {
-  color: var(--text-dark);
+  color: var(--gray-900);
   margin-bottom: 0.5rem;
 }
 
 .access-denied {
   text-align: center;
   padding: 4rem 2rem;
-  color: var(--text-muted);
+  color: var(--gray-600);
 }
 
 .access-denied i {
   font-size: 4rem;
-  color: var(--danger);
+  color: var(--danger-color);
   margin-bottom: 1rem;
 }
 
 .access-denied h2 {
-  color: var(--text-dark);
+  color: var(--gray-900);
   margin-bottom: 0.5rem;
 }
 

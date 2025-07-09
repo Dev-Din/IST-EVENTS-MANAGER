@@ -173,6 +173,117 @@ const updateProfile = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Update user preferences
+// @route   PUT /api/auth/preferences
+// @access  Private
+const updatePreferences = asyncHandler(async (req, res, next) => {
+  const { notifications, language, timezone } = req.body;
+
+  const preferencesToUpdate = {};
+  if (notifications)
+    preferencesToUpdate["preferences.notifications"] = notifications;
+  if (language) preferencesToUpdate["preferences.language"] = language;
+  if (timezone) preferencesToUpdate["preferences.timezone"] = timezone;
+
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { $set: preferencesToUpdate },
+    { new: true, runValidators: true }
+  ).select("-password");
+
+  res.status(200).json({
+    success: true,
+    message: "Preferences updated successfully",
+    user,
+  });
+});
+
+// @desc    Get user profile stats
+// @route   GET /api/auth/profile-stats
+// @access  Private
+const getProfileStats = asyncHandler(async (req, res, next) => {
+  const Ticket = require("../models/Ticket");
+  const Event = require("../models/Event");
+
+  let stats = {
+    totalTickets: 0,
+    upcomingEvents: 0,
+    totalSpent: 0,
+    recentActivity: [],
+  };
+
+  // Get user's tickets
+  const tickets = await Ticket.find({
+    user: req.user.id,
+  })
+    .populate("event", "name date location")
+    .sort({ createdAt: -1 });
+
+  stats.totalTickets = tickets.length;
+  stats.totalSpent = tickets.reduce(
+    (sum, ticket) => sum + ticket.totalAmount,
+    0
+  );
+
+  // Count upcoming events
+  const upcomingEvents = tickets.filter(
+    (ticket) => ticket.event && new Date(ticket.event.date) > new Date()
+  );
+  stats.upcomingEvents = upcomingEvents.length;
+
+  // Recent activity (last 5 ticket purchases)
+  stats.recentActivity = tickets.slice(0, 5).map((ticket) => ({
+    type: "ticket_purchase",
+    eventName: ticket.event?.name || "Unknown Event",
+    date: ticket.createdAt,
+    amount: ticket.totalAmount,
+    currency: ticket.currency,
+  }));
+
+  res.status(200).json({
+    success: true,
+    stats,
+  });
+});
+
+// @desc    Delete user account
+// @route   DELETE /api/auth/account
+// @access  Private
+const deleteAccount = asyncHandler(async (req, res, next) => {
+  const { password } = req.body;
+
+  if (!password) {
+    return res.status(400).json({
+      success: false,
+      message: "Password is required to delete account",
+    });
+  }
+
+  // Get user with password
+  const user = await User.findById(req.user.id).select("+password");
+
+  // Verify password
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    return res.status(401).json({
+      success: false,
+      message: "Incorrect password",
+    });
+  }
+
+  // Soft delete - set inactive instead of hard delete to preserve data integrity
+  await User.findByIdAndUpdate(req.user.id, {
+    isActive: false,
+    email: `deleted_${Date.now()}_${user.email}`, // Prevent email conflicts
+    username: `deleted_${Date.now()}_${user.username}`, // Prevent username conflicts
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Account deleted successfully",
+  });
+});
+
 // @desc    Update password
 // @route   PUT /api/auth/password
 // @access  Private
@@ -340,4 +451,7 @@ module.exports = {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  updatePreferences,
+  getProfileStats,
+  deleteAccount,
 };
