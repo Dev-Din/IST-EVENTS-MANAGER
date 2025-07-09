@@ -16,6 +16,7 @@ import ManageSubAdmins from "../pages/ManageSubAdmins";
 import ManageClients from "../pages/ManageClients";
 import Reports from "../pages/Reports";
 import NotFound from "../pages/NotFound";
+import AdminLogin from "../pages/AdminLogin";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, roles = [] }) => {
@@ -36,7 +37,7 @@ const ProtectedRoute = ({ children, roles = [] }) => {
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
 
-  if (isAuthenticated) {
+  if (isAuthenticated && user) {
     // Redirect to appropriate dashboard based on role
     if (user.role === "super-admin") {
       return <Navigate to="/admin/dashboard" replace />;
@@ -53,20 +54,16 @@ const PublicRoute = ({ children }) => {
 export default function AppRoutes() {
   return (
     <Routes>
+      {/* Hidden Admin Login Route */}
+      <Route path="/admin" element={<AdminLogin />} />
+
       {/* Public Routes */}
       <Route path="/" element={<Home />} />
       <Route path="/events" element={<Home />} />
       <Route path="/events/:id" element={<EventDetails />} />
 
-      {/* Auth Routes - Only show if not logged in */}
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <Login />
-          </PublicRoute>
-        }
-      />
+      {/* Auth Routes - Login handles its own redirection logic */}
+      <Route path="/login" element={<Login />} />
       <Route
         path="/register"
         element={
