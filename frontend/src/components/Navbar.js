@@ -127,6 +127,16 @@ const Navbar = () => {
                 </>
               )}
 
+              {/* Profile Link for all authenticated users */}
+              <Link
+                to="/profile"
+                className="nav-link"
+                onClick={closeMobileMenu}
+              >
+                <i className="fas fa-user-circle"></i>
+                Profile
+              </Link>
+
               {/* User Info & Logout */}
               <div className="nav-user">
                 <span className="user-info">

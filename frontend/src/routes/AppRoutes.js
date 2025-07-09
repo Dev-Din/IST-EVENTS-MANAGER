@@ -9,6 +9,7 @@ import Register from "../pages/Register";
 import EventDetails from "../pages/EventDetails";
 import Purchase from "../pages/Purchase";
 import MyTickets from "../pages/MyTickets";
+import Profile from "../pages/Profile";
 import AdminDashboard from "../pages/AdminDashboard";
 import SubAdminDashboard from "../pages/SubAdminDashboard";
 import ManageEvents from "../pages/ManageEvents";
@@ -90,8 +91,24 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
 
-      {/* Super Admin Routes */}
+      {/* Super Admin Routes */}  
       <Route
         path="/admin/dashboard"
         element={

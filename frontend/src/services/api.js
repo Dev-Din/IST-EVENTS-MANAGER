@@ -43,6 +43,12 @@ export const authAPI = {
   register: (userData) => api.post("/auth/register", userData),
   logout: () => api.post("/auth/logout"),
   getMe: () => api.get("/auth/me"),
+  updateProfile: (userData) => api.put("/auth/profile", userData),
+  updatePassword: (passwords) => api.put("/auth/password", passwords),
+  updatePreferences: (preferences) => api.put("/auth/preferences", preferences),
+  getProfileStats: () => api.get("/auth/profile-stats"),
+  deleteAccount: (password) =>
+    api.delete("/auth/account", { data: { password } }),
 };
 
 export const eventsAPI = {
