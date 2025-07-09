@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../App";
 import { authAPI } from "../services/api";
-import "./Auth.css";
+import "./AdminLogin.css";
 
-const Login = () => {
+const AdminLogin = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { login, logout, isAuthenticated, user } = useAuth();
+  const { login, logout } = useAuth();
 
   const [formData, setFormData] = useState({
     identifier: "",
@@ -16,24 +15,6 @@ const Login = () => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [blockingAdmin, setBlockingAdmin] = useState(false);
-
-  // Get the intended destination from location state
-  const from = location.state?.from?.pathname || "/";
-
-  // Handle redirection if user is already logged in
-  useEffect(() => {
-    if (isAuthenticated && user && !blockingAdmin) {
-      // Redirect to appropriate dashboard based on role
-      if (user.role === "super-admin") {
-        navigate("/admin/dashboard", { replace: true });
-      } else if (user.role === "sub-admin") {
-        navigate("/subadmin/dashboard", { replace: true });
-      } else {
-        navigate(from, { replace: true });
-      }
-    }
-  }, [isAuthenticated, user, navigate, from, blockingAdmin]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -84,31 +65,27 @@ const Login = () => {
       const result = await login(formData);
 
       if (result.success) {
-        // Check user role and block admin users
+        // Get user data from the login result or make a fresh API call
         try {
           const response = await authAPI.getMe();
           const userRole = response.data.user.role;
 
-          if (userRole === "super-admin" || userRole === "sub-admin") {
-            // Block admin users from regular login
-            setBlockingAdmin(true);
-            await logout();
-            setBlockingAdmin(false);
-            setErrors({
-              general: "Admin users must login through the admin portal.",
-            });
-            return; // Prevent any further processing
+          if (userRole === "super-admin") {
+            navigate("/admin/dashboard", { replace: true });
+          } else if (userRole === "sub-admin") {
+            navigate("/subadmin/dashboard", { replace: true });
           } else {
-            // Regular user - allow login
-            navigate(from, { replace: true });
+            // Not an admin - logout and show error
+            await logout();
+            setErrors({
+              general: "Access denied. Admin credentials required.",
+            });
           }
         } catch (error) {
-          console.error("User verification error:", error);
-          setBlockingAdmin(true);
-          await logout(); // Ensure logout on error
-          setBlockingAdmin(false);
+          console.error("Admin verification error:", error);
+          await logout();
           setErrors({
-            general: "Unable to verify user credentials. Please try again.",
+            general: "Unable to verify admin credentials. Please try again.",
           });
         }
       } else {
@@ -122,14 +99,17 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        <div className="auth-header">
-          <h1>Welcome Back</h1>
-          <p>Sign in to your account to continue</p>
+    <div className="admin-login-page">
+      <div className="admin-login-container">
+        <div className="admin-login-header">
+          <div className="admin-logo">
+            <i className="fas fa-shield-alt"></i>
+          </div>
+          <h1>Admin Access</h1>
+          <p>Restricted area for administrators only</p>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <form className="admin-login-form" onSubmit={handleSubmit}>
           {errors.general && (
             <div className="alert alert-error">
               <i className="fas fa-exclamation-triangle"></i>
@@ -147,7 +127,7 @@ const Login = () => {
                 name="identifier"
                 value={formData.identifier}
                 onChange={handleChange}
-                placeholder="Enter your email"
+                placeholder="Enter your admin email"
                 className={errors.identifier ? "error" : ""}
                 disabled={loading}
               />
@@ -179,29 +159,27 @@ const Login = () => {
 
           <button
             type="submit"
-            className="btn btn-primary btn-full"
-            disabled={loading || blockingAdmin}
+            className="btn btn-admin btn-full"
+            disabled={loading}
           >
-            {loading || blockingAdmin ? (
+            {loading ? (
               <>
                 <i className="fas fa-spinner fa-spin"></i>
-                {blockingAdmin ? "Blocking access..." : "Signing In..."}
+                Signing In...
               </>
             ) : (
               <>
                 <i className="fas fa-sign-in-alt"></i>
-                Sign In
+                Admin Sign In
               </>
             )}
           </button>
         </form>
 
-        <div className="auth-footer">
-          <p>
-            Don't have an account?
-            <Link to="/register" className="auth-link">
-              Create one here
-            </Link>
+        <div className="admin-login-footer">
+          <p className="security-notice">
+            <i className="fas fa-info-circle"></i>
+            This is a secure area. All login attempts are monitored.
           </p>
         </div>
       </div>
@@ -209,4 +187,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default AdminLogin;
