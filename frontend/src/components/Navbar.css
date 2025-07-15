@@ -106,14 +106,16 @@
   font-size: var(--font-size-sm);
 }
 
-.register-link {
+.nav-menu .register-link {
   background: var(--primary-color);
-  color: var(--white);
+  color: var(--white) !important;
+  font-weight: 600;
 }
 
-.register-link:hover {
+.nav-menu .register-link:hover {
   background: var(--primary-hover);
-  color: var(--white);
+  color: var(--white) !important;
+  transform: translateY(-1px);
 }
 
 /* User Section */
