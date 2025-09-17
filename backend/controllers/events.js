@@ -168,6 +168,10 @@ const createEvent = asyncHandler(async (req, res, next) => {
   req.body.createdBy = req.user.id;
   req.body.lastModifiedBy = req.user.id;
 
+  // Auto-publish events created by admin
+  req.body.status = "published";
+  req.body.publishedAt = new Date();
+
   const event = await Event.create(req.body);
 
   res.status(201).json({
@@ -210,6 +214,10 @@ const updateEvent = asyncHandler(async (req, res, next) => {
 
   // Add last modified by
   req.body.lastModifiedBy = req.user.id;
+
+  // Auto-publish events when updated by admin
+  req.body.status = "published";
+  req.body.publishedAt = new Date();
 
   event = await Event.findByIdAndUpdate(req.params.id, req.body, {
     new: true,

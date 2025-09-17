@@ -40,8 +40,8 @@ const MyTickets = () => {
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(price);
   };
 
@@ -201,7 +201,7 @@ const MyTickets = () => {
                       </div>
 
                       <div className="detail-item">
-                        <i className="fas fa-dollar-sign"></i>
+                        <i className="fas fa-money-bill-wave"></i>
                         <div>
                           <span className="label">Price Paid</span>
                           <span className="value">

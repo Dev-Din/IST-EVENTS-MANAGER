@@ -1,6 +1,3 @@
-
-
-
 > Build a fullstack secure LegitEvents™ platform using:
 >
 >  Frontend: React.js
