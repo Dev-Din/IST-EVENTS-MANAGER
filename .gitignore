@@ -17,6 +17,9 @@ lerna-debug.log*
 backend/.env
 frontend/.env
 
+# Keep example files
+!env.example
+
 # Build outputs
 build/
 dist/
