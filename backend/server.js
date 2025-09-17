@@ -11,11 +11,17 @@ const path = require("path");
 // Load environment variables
 dotenv.config();
 
+// Import database connection
+const connectDB = require("./config/database");
+
 // Import middleware
 const errorHandler = require("./middleware/errorHandler");
 
 // Import routes
-const authRoutes = require("./routes/postgresAuth");
+const authRoutes = require("./routes/auth");
+
+// Connect to database
+connectDB();
 
 const app = express();
 
@@ -150,8 +156,8 @@ const gracefulShutdown = (signal) => {
     console.log("HTTP server closed.");
 
     // Close database connection
-    const { pool } = require("./controllers/postgresAuth");
-    pool.end(() => {
+    const mongoose = require("mongoose");
+    mongoose.connection.close(() => {
       console.log("Database connection closed.");
       process.exit(0);
     });

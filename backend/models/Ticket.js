@@ -1,0 +1,114 @@
+const mongoose = require("mongoose");
+
+const TicketSchema = new mongoose.Schema(
+  {
+    event: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Event",
+      required: true,
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    ticketNumber: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    quantity: {
+      type: Number,
+      required: [true, "Ticket quantity is required"],
+      min: [1, "Quantity must be at least 1"],
+      max: [10, "Maximum 10 tickets per purchase"],
+    },
+    totalPrice: {
+      type: Number,
+      required: [true, "Total price is required"],
+      min: [0, "Total price cannot be negative"],
+    },
+    status: {
+      type: String,
+      enum: ["pending", "confirmed", "cancelled", "refunded"],
+      default: "pending",
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["card", "mobile_money", "bank_transfer", "cash"],
+      required: [true, "Payment method is required"],
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "completed", "failed", "refunded"],
+      default: "pending",
+    },
+    paymentReference: {
+      type: String,
+      trim: true,
+    },
+    purchaseDate: {
+      type: Date,
+      default: Date.now,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
+
+// Indexes for better performance
+TicketSchema.index({ event: 1 });
+TicketSchema.index({ user: 1 });
+TicketSchema.index({ ticketNumber: 1 });
+TicketSchema.index({ status: 1 });
+TicketSchema.index({ paymentStatus: 1 });
+
+// Virtual for ticket validity
+TicketSchema.virtual("isValid").get(function () {
+  return this.status === "confirmed" && this.paymentStatus === "completed";
+});
+
+// Pre-save middleware to generate ticket number
+TicketSchema.pre("save", function (next) {
+  if (this.isNew && !this.ticketNumber) {
+    this.ticketNumber = `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+  }
+  next();
+});
+
+// Static method to get tickets by user
+TicketSchema.statics.getTicketsByUser = function (userId) {
+  return this.find({ user: userId, isActive: true })
+    .populate("event", "title date location price")
+    .populate("user", "username email fullName")
+    .sort({ purchaseDate: -1 });
+};
+
+// Static method to get tickets by event
+TicketSchema.statics.getTicketsByEvent = function (eventId) {
+  return this.find({ event: eventId, isActive: true })
+    .populate("user", "username email fullName")
+    .sort({ purchaseDate: -1 });
+};
+
+// Instance method to confirm ticket
+TicketSchema.methods.confirmTicket = function () {
+  this.status = "confirmed";
+  this.paymentStatus = "completed";
+  return this.save();
+};
+
+// Instance method to cancel ticket
+TicketSchema.methods.cancelTicket = function () {
+  this.status = "cancelled";
+  return this.save();
+};
+
+module.exports = mongoose.model("Ticket", TicketSchema);
