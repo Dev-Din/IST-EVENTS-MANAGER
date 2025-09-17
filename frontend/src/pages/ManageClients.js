@@ -83,8 +83,8 @@ const ManageClients = () => {
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -278,7 +278,7 @@ const ManageClients = () => {
                           {client.stats?.totalTickets || 0} tickets
                         </div>
                         <div className="activity-stat">
-                          <i className="fas fa-dollar-sign"></i>
+                          <i className="fas fa-money-bill-wave"></i>
                           {formatCurrency(client.stats?.totalSpent || 0)}
                         </div>
                       </div>

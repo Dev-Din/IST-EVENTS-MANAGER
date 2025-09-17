@@ -8,7 +8,7 @@ import {
 import "./EventCard.css";
 
 const EventCard = ({ event, onEdit, onDelete, showActions = false }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
 
   const formatDate = (dateString) => {
     const options = {
@@ -26,28 +26,60 @@ const EventCard = ({ event, onEdit, onDelete, showActions = false }) => {
     return formatEventCurrency(price, currency || DEFAULT_EVENT_CURRENCY.code);
   };
 
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      draft: { class: "status-draft", text: "Draft", icon: "fas fa-edit" },
+      published: {
+        class: "status-published",
+        text: "Published",
+        icon: "fas fa-check-circle",
+      },
+      cancelled: {
+        class: "status-cancelled",
+        text: "Cancelled",
+        icon: "fas fa-times-circle",
+      },
+      completed: {
+        class: "status-completed",
+        text: "Completed",
+        icon: "fas fa-check",
+      },
+    };
+
+    const config = statusConfig[status] || statusConfig.draft;
+    return (
+      <span className={`status-badge ${config.class}`}>
+        <i className={config.icon}></i>
+        {config.text}
+      </span>
+    );
+  };
+
   return (
     <div className="event-card">
       <div className="event-card-header">
         <h3 className="event-title">{event.name}</h3>
-        {showActions && (
-          <div className="event-actions">
-            <button
-              className="btn btn-sm btn-primary"
-              onClick={() => onEdit(event)}
-              title="Edit Event"
-            >
-              <i className="fas fa-edit"></i>
-            </button>
-            <button
-              className="btn btn-sm btn-danger"
-              onClick={() => onDelete(event)}
-              title="Delete Event"
-            >
-              <i className="fas fa-trash"></i>
-            </button>
-          </div>
-        )}
+        <div className="event-header-actions">
+          {getStatusBadge(event.status)}
+          {showActions && (
+            <div className="event-actions">
+              <button
+                className="btn btn-sm btn-primary"
+                onClick={() => onEdit(event)}
+                title="Edit Event"
+              >
+                <i className="fas fa-edit"></i>
+              </button>
+              <button
+                className="btn btn-sm btn-danger"
+                onClick={() => onDelete(event)}
+                title="Delete Event"
+              >
+                <i className="fas fa-trash"></i>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="event-details">

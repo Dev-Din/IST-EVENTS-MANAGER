@@ -131,10 +131,9 @@ const Reports = () => {
   };
 
   const formatCurrency = (amount) => {
-    // Use KES as default since this is an East African system
-    return new Intl.NumberFormat("en-KE", {
-      style: "currency",
-      currency: "KES",
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount || 0);
   };
 
@@ -237,7 +236,7 @@ const Reports = () => {
 
           <div className="overview-card">
             <div className="card-icon revenue">
-              <i className="fas fa-dollar-sign"></i>
+              <i className="fas fa-money-bill-wave"></i>
             </div>
             <div className="card-content">
               <h3>{formatCurrency(overviewData.summary.totalRevenue || 0)}</h3>
@@ -291,7 +290,7 @@ const Reports = () => {
                         {event.ticketsSold || 0} tickets
                       </span>
                       <span className="stat">
-                        <i className="fas fa-dollar-sign"></i>
+                        <i className="fas fa-money-bill-wave"></i>
                         {formatCurrency(event.revenue || 0)}
                       </span>
                     </div>

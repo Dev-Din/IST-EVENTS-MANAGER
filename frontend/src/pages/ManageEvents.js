@@ -21,6 +21,7 @@ const ManageEvents = () => {
     date: "",
     location: "",
     charges: "",
+    capacity: "",
     currency: DEFAULT_EVENT_CURRENCY.code,
   });
 
@@ -50,6 +51,7 @@ const ManageEvents = () => {
       date: "",
       location: "",
       charges: "",
+      capacity: "",
       currency: DEFAULT_EVENT_CURRENCY.code,
     });
     setShowModal(true);
@@ -63,6 +65,7 @@ const ManageEvents = () => {
       date: new Date(event.date).toISOString().slice(0, 16),
       location: event.location,
       charges: event.charges.toString(),
+      capacity: event.capacity.toString(),
       currency: event.currency || DEFAULT_EVENT_CURRENCY.code,
     });
     setShowModal(true);
@@ -86,6 +89,7 @@ const ManageEvents = () => {
       const eventData = {
         ...formData,
         charges: parseFloat(formData.charges),
+        capacity: parseInt(formData.capacity),
       };
 
       if (editingEvent) {
@@ -238,6 +242,20 @@ const ManageEvents = () => {
                 min="0"
                 step="0.01"
                 placeholder="0.00"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="capacity">Event Capacity *</label>
+              <input
+                type="number"
+                id="capacity"
+                name="capacity"
+                value={formData.capacity}
+                onChange={handleChange}
+                required
+                min="1"
+                placeholder="100"
               />
             </div>
 

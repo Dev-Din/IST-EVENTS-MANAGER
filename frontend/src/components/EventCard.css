@@ -34,10 +34,55 @@
   margin-right: var(--spacing-md);
 }
 
+.event-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
 .event-actions {
   display: flex;
   gap: var(--spacing-xs);
   flex-shrink: 0;
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge i {
+  font-size: 10px;
+}
+
+.status-draft {
+  background: var(--warning-color);
+  color: var(--white);
+}
+
+.status-published {
+  background: var(--success-color);
+  color: var(--white);
+}
+
+.status-cancelled {
+  background: var(--danger-color);
+  color: var(--white);
+}
+
+.status-completed {
+  background: var(--info-color);
+  color: var(--white);
 }
 
 /* Event Details */
