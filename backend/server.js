@@ -51,12 +51,24 @@ app.use(
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
-      process.env.CLIENT_URL || "http://localhost:3000",
+      process.env.FRONTEND_URL ||
+        process.env.CLIENT_URL ||
+        "http://localhost:3000",
       "http://localhost:3000",
       "http://localhost:3001",
+      // Add your Vercel domain here after deployment
+      /\.vercel\.app$/,
     ];
 
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (
+      !origin ||
+      allowedOrigins.some((allowedOrigin) => {
+        if (typeof allowedOrigin === "string") {
+          return allowedOrigin === origin;
+        }
+        return allowedOrigin.test(origin);
+      })
+    ) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
