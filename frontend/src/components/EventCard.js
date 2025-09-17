@@ -8,7 +8,7 @@ import {
 import "./EventCard.css";
 
 const EventCard = ({ event, onEdit, onDelete, showActions = false }) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const formatDate = (dateString) => {
     const options = {
