@@ -40,12 +40,12 @@ const SUPERADMIN_CREDENTIALS = {
 
 const sampleEvents = [
   {
-    name: "East African Tech Summit 2024",
+    title: "East African Tech Summit 2024",
     description:
       "Join us for the biggest tech conference in East Africa featuring industry leaders and cutting-edge technologies.",
     date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
     location: "Kenyatta International Convention Centre, Nairobi",
-    charges: 15000,
+    price: 15000,
     currency: "KES",
     category: "conference",
     capacity: 500,
@@ -53,13 +53,13 @@ const sampleEvents = [
     isPublic: true,
     isFeatured: true,
     organizer: {
-      name: "East Africa Tech Events",
+      title: "East Africa Tech Events",
       email: "info@eatechevents.com",
       phone: "+254 700 123 001",
       website: "https://eatechevents.com",
     },
     venue: {
-      name: "Kenyatta International Convention Centre",
+      title: "Kenyatta International Convention Centre",
       address: {
         street: "Harambee Avenue",
         city: "Nairobi",
@@ -71,50 +71,50 @@ const sampleEvents = [
     tags: ["technology", "conference", "networking", "innovation"],
   },
   {
-    name: "Web Development Workshop",
+    title: "Web Development Workshop",
     description:
       "Learn modern web development techniques with React, Node.js, and MongoDB in this hands-on workshop.",
     date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days from now
     location: "iHub, Nairobi",
-    charges: 8000,
+    price: 8000,
     currency: "KES",
     category: "workshop",
     capacity: 50,
     status: "published",
     isPublic: true,
     organizer: {
-      name: "Code Academy East Africa",
+      title: "Code Academy East Africa",
       email: "workshops@codeacademyea.com",
       phone: "+254 700 123 002",
     },
     tags: ["web development", "react", "nodejs", "mongodb"],
   },
   {
-    name: "Digital Marketing Seminar",
+    title: "Digital Marketing Seminar",
     description:
       "Discover the latest trends and strategies in digital marketing to grow your business in East Africa.",
     date: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000), // 20 days from now
     location: "Business Hub, Kampala",
-    charges: 150000,
+    price: 150000,
     currency: "UGX",
     category: "seminar",
     capacity: 100,
     status: "published",
     isPublic: true,
     organizer: {
-      name: "Marketing Masters East Africa",
+      title: "Marketing Masters East Africa",
       email: "info@marketingmastersea.com",
       phone: "+256 700 123 003",
     },
     tags: ["marketing", "digital", "business", "strategy"],
   },
   {
-    name: "East African Music Festival",
+    title: "East African Music Festival",
     description:
       "Three days of amazing music featuring top artists from across East Africa.",
     date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
     location: "Uhuru Park, Nairobi",
-    charges: 3500,
+    price: 3500,
     currency: "KES",
     category: "festival",
     capacity: 2000,
@@ -122,19 +122,19 @@ const sampleEvents = [
     isPublic: true,
     isFeatured: true,
     organizer: {
-      name: "East Africa Festival Productions",
+      title: "East Africa Festival Productions",
       email: "info@eafestivalproductions.com",
       phone: "+254 700 123 004",
     },
     tags: ["music", "festival", "outdoor", "entertainment"],
   },
   {
-    name: "AI & Machine Learning Expo East Africa",
+    title: "AI & Machine Learning Expo East Africa",
     description:
       "Explore the future of artificial intelligence and machine learning technologies in East Africa.",
     date: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
     location: "Julius Nyerere Convention Centre, Dar es Salaam",
-    charges: 200000,
+    price: 200000,
     currency: "TZS",
     category: "exhibition",
     capacity: 800,
@@ -142,7 +142,7 @@ const sampleEvents = [
     isPublic: true,
     isFeatured: true,
     organizer: {
-      name: "AI Expo East Africa",
+      title: "AI Expo East Africa",
       email: "info@aiexpoea.com",
       phone: "+255 700 123 005",
     },
@@ -154,19 +154,19 @@ const sampleEvents = [
     ],
   },
   {
-    name: "East African Startup Networking Event",
+    title: "East African Startup Networking Event",
     description:
       "Connect with fellow entrepreneurs, investors, and startup enthusiasts across East Africa.",
     date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
     location: "Kigali Convention Centre, Rwanda",
-    charges: 25000,
+    price: 25000,
     currency: "RWF",
     category: "networking",
     capacity: 80,
     status: "published",
     isPublic: true,
     organizer: {
-      name: "East Africa Startup Community",
+      title: "East Africa Startup Community",
       email: "events@eastafricastartups.com",
       phone: "+250 700 123 006",
     },
