@@ -19,7 +19,7 @@ const EventDetails = () => {
     try {
       setLoading(true);
       const response = await eventsAPI.getById(id);
-      setEvent(response.data.event);
+      setEvent(response.data.data);
       setError("");
     } catch (error) {
       console.error("Error fetching event:", error);
@@ -134,13 +134,13 @@ const EventDetails = () => {
 
   return (
     <div className="event-details-page">
-            {/* Hero Section */}
+      {/* Hero Section */}
       <div className="event-hero">
         <div className="hero-background">
           {getEventImage() && !imageError ? (
-            <img 
-              src={getEventImage()} 
-              alt={event.name}
+            <img
+              src={getEventImage()}
+              alt={event.title}
               onError={() => setImageError(true)}
               className="hero-image"
             />
@@ -159,7 +159,7 @@ const EventDetails = () => {
             <span className="separator">
               <i className="fas fa-chevron-right"></i>
             </span>
-            <span className="current">{event.name}</span>
+            <span className="current">{event.title}</span>
           </nav>
 
           <div className="hero-content">
@@ -167,7 +167,7 @@ const EventDetails = () => {
               <i className="fas fa-calendar-star"></i>
               Featured Event
             </div>
-            <h1 className="event-title">{event.name}</h1>
+            <h1 className="event-title">{event.title}</h1>
             {event.createdBy && (
               <div className="event-organizer">
                 <i className="fas fa-user-circle"></i>
@@ -229,7 +229,7 @@ const EventDetails = () => {
                   <div className="card-content">
                     <h3>Ticket Price</h3>
                     <p className="price-display">
-                      {formatPrice(event.charges, event.currency)}
+                      {formatPrice(event.price, event.currency)}
                     </p>
                     <span className="price-note">per person</span>
                   </div>
@@ -280,7 +280,7 @@ const EventDetails = () => {
                 <div className="booking-header">
                   <div className="price-highlight">
                     <span className="price">
-                      {formatPrice(event.charges, event.currency)}
+                      {formatPrice(event.price, event.currency)}
                     </span>
                     <span className="price-label">per ticket</span>
                   </div>

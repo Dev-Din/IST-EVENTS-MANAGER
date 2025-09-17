@@ -26,10 +26,17 @@ function App() {
 
   const checkAuthStatus = async () => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
       const response = await api.get("/auth/me");
       setUser(response.data.user);
     } catch (error) {
       console.log("Not authenticated");
+      localStorage.removeItem("token");
     } finally {
       setLoading(false);
     }
@@ -38,6 +45,12 @@ function App() {
   const login = async (credentials) => {
     try {
       const response = await api.post("/auth/login", credentials);
+
+      // Store JWT token in localStorage
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+
       setUser(response.data.user);
       return { success: true };
     } catch (error) {
@@ -51,9 +64,13 @@ function App() {
   const logout = async () => {
     try {
       await api.post("/auth/logout");
+      localStorage.removeItem("token");
       setUser(null);
     } catch (error) {
       console.error("Logout error:", error);
+      // Clear token even if logout fails
+      localStorage.removeItem("token");
+      setUser(null);
     }
   };
 

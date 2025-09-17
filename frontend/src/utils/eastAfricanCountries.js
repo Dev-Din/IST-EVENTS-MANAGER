@@ -183,6 +183,12 @@ export const getCountryByPhone = (phone) => {
 // Format currency for display
 export const formatCurrency = (amount, countryCode) => {
   const country = getCountryByCode(countryCode);
+
+  // Handle undefined or null amount
+  if (amount === undefined || amount === null) {
+    return `${country.currencySymbol} 0`;
+  }
+
   return `${country.currencySymbol} ${amount.toLocaleString()}`;
 };
 
@@ -249,6 +255,12 @@ export const formatEventCurrency = (amount, currencyCode) => {
   const currency =
     EVENT_CURRENCIES.find((c) => c.code === currencyCode) ||
     DEFAULT_EVENT_CURRENCY;
+
+  // Handle undefined or null amount
+  if (amount === undefined || amount === null) {
+    return `${currency.symbol} 0`;
+  }
+
   return `${currency.symbol} ${amount.toLocaleString()}`;
 };
 

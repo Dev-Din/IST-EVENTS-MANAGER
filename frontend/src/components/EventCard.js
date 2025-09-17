@@ -22,6 +22,11 @@ const EventCard = ({ event, onEdit, onDelete, showActions = false }) => {
   };
 
   const formatPrice = (price, currency) => {
+    // Handle undefined or null price
+    if (price === undefined || price === null) {
+      return formatEventCurrency(0, currency || DEFAULT_EVENT_CURRENCY.code);
+    }
+
     // Use event's currency or default to KES
     return formatEventCurrency(price, currency || DEFAULT_EVENT_CURRENCY.code);
   };
@@ -58,7 +63,7 @@ const EventCard = ({ event, onEdit, onDelete, showActions = false }) => {
   return (
     <div className="event-card">
       <div className="event-card-header">
-        <h3 className="event-title">{event.name}</h3>
+        <h3 className="event-title">{event.title}</h3>
         <div className="event-header-actions">
           {getStatusBadge(event.status)}
           {showActions && (
@@ -96,7 +101,7 @@ const EventCard = ({ event, onEdit, onDelete, showActions = false }) => {
 
           <div className="info-item">
             <i className="fas fa-dollar-sign"></i>
-            <span>{formatPrice(event.charges, event.currency)}</span>
+            <span>{formatPrice(event.price, event.currency)}</span>
           </div>
         </div>
 

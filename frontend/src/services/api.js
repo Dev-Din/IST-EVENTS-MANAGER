@@ -2,8 +2,7 @@ import axios from "axios";
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "/api",
-  withCredentials: true, // Important for session-based auth
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -16,6 +15,13 @@ api.interceptors.request.use(
     console.log(
       `Making ${config.method?.toUpperCase()} request to: ${config.url}`
     );
+
+    // Add JWT token to requests if available
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
     return config;
   },
   (error) => {
@@ -29,7 +35,12 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Don't auto-redirect on 401 - let components handle authentication state
+    // Handle 401 errors by clearing token and redirecting to login
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      // Don't auto-redirect - let components handle authentication state
+    }
+
     console.log(
       `API Error: ${error.response?.status} - ${error.response?.statusText}`
     );

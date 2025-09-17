@@ -72,10 +72,14 @@ const updateSubAdmin = asyncHandler(async (req, res, next) => {
     country: req.body.country,
   };
 
-  const updatedUser = await User.findByIdAndUpdate(req.params.id, fieldsToUpdate, {
-    new: true,
-    runValidators: true,
-  });
+  const updatedUser = await User.findByIdAndUpdate(
+    req.params.id,
+    fieldsToUpdate,
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
 
   res.json({
     success: true,
@@ -122,7 +126,9 @@ const toggleSubAdminStatus = asyncHandler(async (req, res, next) => {
 
   res.json({
     success: true,
-    message: `Sub-admin ${user.isActive ? "activated" : "deactivated"} successfully`,
+    message: `Sub-admin ${
+      user.isActive ? "activated" : "deactivated"
+    } successfully`,
     data: user,
   });
 });
@@ -155,7 +161,9 @@ const toggleClientStatus = asyncHandler(async (req, res, next) => {
 
   res.json({
     success: true,
-    message: `Client ${user.isActive ? "activated" : "deactivated"} successfully`,
+    message: `Client ${
+      user.isActive ? "activated" : "deactivated"
+    } successfully`,
     data: user,
   });
 });
@@ -214,9 +222,105 @@ const getReports = asyncHandler(async (req, res, next) => {
 
   let reports = {};
 
+  if (type === "overview" || !type) {
+    // Calculate overview statistics
+    const totalEvents = await Event.countDocuments({ isActive: true });
+    const activeEvents = await Event.countDocuments({
+      status: "published",
+      isActive: true,
+      date: { $gte: new Date() },
+    });
+    const totalTickets = await Ticket.countDocuments({
+      status: "confirmed",
+      paymentStatus: "completed",
+    });
+
+    // Calculate total revenue
+    const revenueData = await Ticket.aggregate([
+      { $match: { status: "confirmed", paymentStatus: "completed" } },
+      { $group: { _id: null, total: { $sum: "$totalPrice" } } },
+    ]);
+    const totalRevenue = revenueData[0]?.total || 0;
+
+    // Get events by category
+    const eventsByCategory = await Event.aggregate([
+      { $match: { isActive: true } },
+      { $group: { _id: "$category", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]);
+
+    // Get top events by ticket sales
+    const topEvents = await Event.aggregate([
+      { $match: { isActive: true } },
+      {
+        $lookup: {
+          from: "tickets",
+          localField: "_id",
+          foreignField: "event",
+          as: "tickets",
+        },
+      },
+      {
+        $addFields: {
+          ticketsSold: {
+            $sum: {
+              $map: {
+                input: "$tickets",
+                as: "ticket",
+                in: {
+                  $cond: [
+                    { $eq: ["$$ticket.status", "confirmed"] },
+                    "$$ticket.quantity",
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+          revenue: {
+            $sum: {
+              $map: {
+                input: "$tickets",
+                as: "ticket",
+                in: {
+                  $cond: [
+                    { $eq: ["$$ticket.status", "confirmed"] },
+                    "$$ticket.totalPrice",
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+      { $sort: { ticketsSold: -1 } },
+      { $limit: 5 },
+      {
+        $project: {
+          title: 1,
+          category: 1,
+          price: 1,
+          currency: 1,
+          ticketsSold: 1,
+          revenue: 1,
+        },
+      },
+    ]);
+
+    reports.summary = {
+      totalEvents,
+      activeEvents,
+      totalTickets,
+      totalRevenue,
+    };
+    reports.eventsByCategory = eventsByCategory;
+    reports.topEvents = topEvents;
+  }
+
   if (type === "sales" || !type) {
     const salesQuery = { status: "confirmed", paymentStatus: "completed" };
-    
+
     if (startDate && endDate) {
       salesQuery.purchaseDate = {
         $gte: new Date(startDate),
@@ -241,7 +345,7 @@ const getReports = asyncHandler(async (req, res, next) => {
 
   if (type === "events" || !type) {
     const eventsQuery = { isActive: true };
-    
+
     if (startDate && endDate) {
       eventsQuery.createdAt = {
         $gte: new Date(startDate),

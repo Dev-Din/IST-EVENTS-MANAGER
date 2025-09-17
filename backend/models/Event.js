@@ -35,6 +35,12 @@ const EventSchema = new mongoose.Schema(
       required: [true, "Event price is required"],
       min: [0, "Event price cannot be negative"],
     },
+    currency: {
+      type: String,
+      required: [true, "Event currency is required"],
+      default: "KES",
+      enum: ["KES", "UGX", "TZS", "RWF", "ETB", "BIF", "USD"],
+    },
     capacity: {
       type: Number,
       required: [true, "Event capacity is required"],

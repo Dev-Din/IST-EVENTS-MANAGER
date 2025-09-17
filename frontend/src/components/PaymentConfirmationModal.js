@@ -26,7 +26,7 @@ const PaymentConfirmationModal = ({
   };
 
   const calculateTotal = () => {
-    return event ? event.charges * quantity : 0;
+    return event ? event.price * quantity : 0;
   };
 
   const calculateProcessingFee = () => {
