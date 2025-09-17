@@ -81,7 +81,12 @@ const Login = () => {
     setErrors({});
 
     try {
-      const result = await login(formData);
+      // Convert identifier to email for backend
+      const loginData = {
+        email: formData.identifier,
+        password: formData.password,
+      };
+      const result = await login(loginData);
 
       if (result.success) {
         // Check user role and block admin users

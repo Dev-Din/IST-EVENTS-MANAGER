@@ -62,7 +62,12 @@ const AdminLogin = () => {
     setErrors({});
 
     try {
-      const result = await login(formData);
+      // Convert identifier to email for backend
+      const loginData = {
+        email: formData.identifier,
+        password: formData.password,
+      };
+      const result = await login(loginData);
 
       if (result.success) {
         // Get user data from the login result or make a fresh API call

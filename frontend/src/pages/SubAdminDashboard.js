@@ -26,13 +26,13 @@ const SubAdminDashboard = () => {
       // Fetch events (in real app, this would be filtered to sub-admin's events)
       const eventsResponse = await eventsAPI
         .getAll()
-        .catch(() => ({ data: { events: [] } }));
+        .catch(() => ({ data: { data: [] } }));
 
       setStats({
-        totalEvents: eventsResponse.data.events?.length || 0,
-        myEvents: eventsResponse.data.events?.length || 0, // In real app, filter by creator
+        totalEvents: eventsResponse.data.data?.length || 0,
+        myEvents: eventsResponse.data.data?.length || 0, // In real app, filter by creator
         totalTickets: 0, // Would be calculated from actual ticket sales
-        recentEvents: eventsResponse.data.events?.slice(0, 5) || [],
+        recentEvents: eventsResponse.data.data?.slice(0, 5) || [],
       });
 
       setError("");
@@ -162,7 +162,7 @@ const SubAdminDashboard = () => {
                 {stats.recentEvents.map((event) => (
                   <div key={event._id} className="event-item">
                     <div className="event-info">
-                      <h4>{event.name}</h4>
+                      <h4>{event.title}</h4>
                       <p className="event-details">
                         <i className="fas fa-calendar"></i>
                         {formatDate(event.date)}
@@ -171,7 +171,7 @@ const SubAdminDashboard = () => {
                         {event.location}
                         <span className="separator">•</span>
                         <i className="fas fa-dollar-sign"></i>
-                        {formatPrice(event.charges)}
+                        {formatPrice(event.price)}
                       </p>
                     </div>
                     <div className="event-actions">

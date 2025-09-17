@@ -136,7 +136,7 @@ const sampleEvents = [
     location: "Julius Nyerere Convention Centre, Dar es Salaam",
     price: 200000,
     currency: "TZS",
-    category: "exhibition",
+    category: "conference",
     capacity: 800,
     status: "published",
     isPublic: true,

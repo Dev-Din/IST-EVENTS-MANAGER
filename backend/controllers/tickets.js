@@ -11,7 +11,12 @@ const purchaseTickets = asyncHandler(async (req, res, next) => {
 
   // Validate required fields
   if (!eventId || !quantity || !paymentMethod) {
-    return next(new ErrorResponse("Please provide eventId, quantity, and paymentMethod", 400));
+    return next(
+      new ErrorResponse(
+        "Please provide eventId, quantity, and paymentMethod",
+        400
+      )
+    );
   }
 
   // Check if event exists and is available
@@ -22,7 +27,9 @@ const purchaseTickets = asyncHandler(async (req, res, next) => {
   }
 
   if (event.status !== "published") {
-    return next(new ErrorResponse("Event is not available for ticket purchase", 400));
+    return next(
+      new ErrorResponse("Event is not available for ticket purchase", 400)
+    );
   }
 
   if (event.availableTickets < quantity) {
@@ -41,6 +48,10 @@ const purchaseTickets = asyncHandler(async (req, res, next) => {
     paymentMethod,
     status: "confirmed",
     paymentStatus: "completed",
+    ticketNumber: `TKT-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)
+      .toUpperCase()}`,
   });
 
   // Update event available tickets
@@ -81,8 +92,13 @@ const getTicketsByEvent = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Event not found", 404));
   }
 
-  if (event.createdBy.toString() !== req.user.id && req.user.role !== "super-admin") {
-    return next(new ErrorResponse("Not authorized to view tickets for this event", 401));
+  if (
+    event.createdBy.toString() !== req.user.id &&
+    req.user.role !== "super-admin"
+  ) {
+    return next(
+      new ErrorResponse("Not authorized to view tickets for this event", 401)
+    );
   }
 
   const tickets = await Ticket.getTicketsByEvent(req.params.eventId);
@@ -105,7 +121,10 @@ const cancelTicket = asyncHandler(async (req, res, next) => {
   }
 
   // Check if user owns the ticket or is admin
-  if (ticket.user.toString() !== req.user.id && req.user.role !== "super-admin") {
+  if (
+    ticket.user.toString() !== req.user.id &&
+    req.user.role !== "super-admin"
+  ) {
     return next(new ErrorResponse("Not authorized to cancel this ticket", 401));
   }
 

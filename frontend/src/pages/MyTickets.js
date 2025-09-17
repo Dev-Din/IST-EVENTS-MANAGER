@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Loading from "../components/Loading";
+import TicketDownload from "../components/TicketDownload";
 import { ticketsAPI } from "../services/api";
 import "./MyTickets.css";
 
@@ -8,6 +9,8 @@ const MyTickets = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [showTicketDownload, setShowTicketDownload] = useState(false);
 
   useEffect(() => {
     fetchMyTickets();
@@ -17,7 +20,7 @@ const MyTickets = () => {
     try {
       setLoading(true);
       const response = await ticketsAPI.getMyTickets();
-      setTickets(response.data.tickets || []);
+      setTickets(response.data.data || []);
       setError("");
     } catch (error) {
       console.error("Error fetching tickets:", error);
@@ -74,6 +77,16 @@ const MyTickets = () => {
         }, 1000);
       }, 100);
     }
+  };
+
+  const handleDownloadTicket = (ticket) => {
+    setSelectedTicket(ticket);
+    setShowTicketDownload(true);
+  };
+
+  const handleCloseTicketDownload = () => {
+    setSelectedTicket(null);
+    setShowTicketDownload(false);
   };
 
   if (loading) {
@@ -138,7 +151,7 @@ const MyTickets = () => {
                         (total, ticket) =>
                           total +
                           (ticket.totalAmount ||
-                            (ticket.unitPrice || ticket.event.charges || 0) *
+                            (ticket.unitPrice || ticket.event.price || 0) *
                               (ticket.quantity || 1)),
                         0
                       )
@@ -160,7 +173,7 @@ const MyTickets = () => {
                 >
                   <div className="ticket-header">
                     <div className="ticket-info">
-                      <h3 className="event-name">{ticket.event.name}</h3>
+                      <h3 className="event-name">{ticket.event.title}</h3>
                       <span className="ticket-id">
                         Ticket ID: {generateTicketId(ticket)}
                       </span>
@@ -207,9 +220,8 @@ const MyTickets = () => {
                           <span className="value">
                             {formatPrice(
                               ticket.totalAmount ||
-                                (ticket.unitPrice ||
-                                  ticket.event.charges ||
-                                  0) * (ticket.quantity || 1)
+                                (ticket.unitPrice || ticket.event.price || 0) *
+                                  (ticket.quantity || 1)
                             )}
                           </span>
                         </div>
@@ -246,6 +258,14 @@ const MyTickets = () => {
 
                     <button
                       className="btn btn-primary"
+                      onClick={() => handleDownloadTicket(ticket)}
+                    >
+                      <i className="fas fa-download"></i>
+                      Download Ticket
+                    </button>
+
+                    <button
+                      className="btn btn-outline"
                       onClick={() => handlePrintTicket(ticket._id)}
                     >
                       <i className="fas fa-print"></i>
@@ -266,6 +286,13 @@ const MyTickets = () => {
           </>
         )}
       </div>
+
+      {showTicketDownload && selectedTicket && (
+        <TicketDownload
+          ticket={selectedTicket}
+          onClose={handleCloseTicketDownload}
+        />
+      )}
     </div>
   );
 };

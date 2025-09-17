@@ -21,7 +21,7 @@ const Home = () => {
     try {
       setLoading(true);
       const response = await eventsAPI.getAll();
-      setEvents(response.data.events || []);
+      setEvents(response.data.data || []);
       setError("");
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -34,7 +34,7 @@ const Home = () => {
   const filteredAndSortedEvents = events
     .filter(
       (event) =>
-        event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.description.toLowerCase().includes(searchTerm.toLowerCase())
     )
@@ -43,9 +43,9 @@ const Home = () => {
         case "date":
           return new Date(a.date) - new Date(b.date);
         case "name":
-          return a.name.localeCompare(b.name);
+          return a.title.localeCompare(b.title);
         case "price":
-          return a.charges - b.charges;
+          return a.price - b.price;
         default:
           return 0;
       }

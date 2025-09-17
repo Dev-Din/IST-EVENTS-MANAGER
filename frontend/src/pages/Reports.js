@@ -283,7 +283,7 @@ const Reports = () => {
                 >
                   <div className="event-rank">#{index + 1}</div>
                   <div className="event-details">
-                    <h4>{event.name}</h4>
+                    <h4>{event.title}</h4>
                     <div className="event-stats">
                       <span className="stat">
                         <i className="fas fa-ticket-alt"></i>

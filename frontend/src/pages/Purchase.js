@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import PaymentConfirmationModal from "../components/PaymentConfirmationModal";
+import TicketDownload from "../components/TicketDownload";
 import { eventsAPI, ticketsAPI } from "../services/api";
 import "./Purchase.css";
 
@@ -18,12 +19,14 @@ const Purchase = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [purchasedQuantity, setPurchasedQuantity] = useState(1);
+  const [purchasedTicket, setPurchasedTicket] = useState(null);
+  const [showTicketDownload, setShowTicketDownload] = useState(false);
 
   const fetchEvent = useCallback(async () => {
     try {
       setLoading(true);
       const response = await eventsAPI.getById(eventId);
-      setEvent(response.data.event);
+      setEvent(response.data.data);
       setError("");
     } catch (error) {
       console.error("Error fetching event:", error);
@@ -48,7 +51,7 @@ const Purchase = () => {
   };
 
   const calculateTotal = () => {
-    return event ? event.charges * quantity : 0;
+    return event ? event.price * quantity : 0;
   };
 
   const calculateProcessingFee = () => {
@@ -72,16 +75,12 @@ const Purchase = () => {
       const purchaseData = {
         eventId: eventId,
         quantity: quantity,
-        attendee: {
-          fullName: user.fullName || user.username,
-          email: user.email,
-          phone: user.phone || "",
-        },
-        paymentDetails: paymentDetails,
+        paymentMethod: "mobile_money", // M-PESA is a mobile money service
       };
 
-      await ticketsAPI.purchase(purchaseData);
+      const response = await ticketsAPI.purchase(purchaseData);
       setPurchasedQuantity(quantity);
+      setPurchasedTicket(response.data.data);
       setSuccess(true);
       setShowPaymentModal(false);
     } catch (error) {
@@ -111,6 +110,14 @@ const Purchase = () => {
       minute: "2-digit",
     };
     return new Date(dateString).toLocaleDateString("en-US", options);
+  };
+
+  const handleDownloadTicket = () => {
+    setShowTicketDownload(true);
+  };
+
+  const handleCloseTicketDownload = () => {
+    setShowTicketDownload(false);
   };
 
   if (loading) {
@@ -148,7 +155,7 @@ const Purchase = () => {
               <div className="ticket-info">
                 <div className="info-row">
                   <span className="label">Event:</span>
-                  <span className="value">{event.name}</span>
+                  <span className="value">{event.title}</span>
                 </div>
                 <div className="info-row">
                   <span className="label">Date:</span>
@@ -167,14 +174,14 @@ const Purchase = () => {
                 <div className="info-row">
                   <span className="label">Price per ticket:</span>
                   <span className="value">
-                    {formatPrice(event.charges, event.currency)}
+                    {formatPrice(event.price, event.currency)}
                   </span>
                 </div>
                 <div className="info-row">
                   <span className="label">Total paid:</span>
                   <span className="value">
                     {formatPrice(
-                      event.charges * purchasedQuantity,
+                      event.price * purchasedQuantity,
                       event.currency
                     )}
                   </span>
@@ -189,6 +196,15 @@ const Purchase = () => {
             </div>
 
             <div className="success-actions">
+              {purchasedTicket && (
+                <button
+                  className="btn btn-success"
+                  onClick={handleDownloadTicket}
+                >
+                  <i className="fas fa-download"></i>
+                  Download Ticket with QR Code
+                </button>
+              )}
               <Link to="/my-tickets" className="btn btn-primary">
                 <i className="fas fa-ticket-alt"></i>
                 View My Tickets
@@ -210,7 +226,7 @@ const Purchase = () => {
           <nav className="breadcrumb">
             <Link to="/">Events</Link>
             <span className="separator">/</span>
-            <Link to={`/events/${eventId}`}>{event.name}</Link>
+            <Link to={`/events/${eventId}`}>{event.title}</Link>
             <span className="separator">/</span>
             <span className="current">Purchase</span>
           </nav>
@@ -222,7 +238,7 @@ const Purchase = () => {
           <div className="event-summary">
             <h2>Event Details</h2>
             <div className="event-card">
-              <h3>{event.name}</h3>
+              <h3>{event.title}</h3>
               <div className="event-details">
                 <div className="detail-item">
                   <i className="fas fa-calendar"></i>
@@ -234,7 +250,7 @@ const Purchase = () => {
                 </div>
                 <div className="detail-item">
                   <i className="fas fa-dollar-sign"></i>
-                  <span>{formatPrice(event.charges, event.currency)}</span>
+                  <span>{formatPrice(event.price, event.currency)}</span>
                 </div>
               </div>
               {event.description && (
@@ -302,8 +318,7 @@ const Purchase = () => {
                   </p>
                   <div className="price-calculation">
                     <span>
-                      {formatPrice(event.charges, event.currency)} × {quantity}{" "}
-                      ={" "}
+                      {formatPrice(event.price, event.currency)} × {quantity} ={" "}
                     </span>
                     <strong>
                       {formatPrice(calculateTotal(), event.currency)}
@@ -318,7 +333,7 @@ const Purchase = () => {
               <div className="summary-items">
                 <div className="summary-item">
                   <span>
-                    {quantity} Ticket{quantity > 1 ? "s" : ""} ({event.name})
+                    {quantity} Ticket{quantity > 1 ? "s" : ""} ({event.title})
                   </span>
                   <span>{formatPrice(calculateTotal(), event.currency)}</span>
                 </div>
@@ -398,6 +413,13 @@ const Purchase = () => {
           quantity={quantity}
           onConfirmPayment={handleConfirmPayment}
           loading={purchasing}
+        />
+      )}
+
+      {showTicketDownload && purchasedTicket && (
+        <TicketDownload
+          ticket={purchasedTicket}
+          onClose={handleCloseTicketDownload}
         />
       )}
     </div>

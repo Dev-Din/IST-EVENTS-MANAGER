@@ -29,15 +29,15 @@ const AdminDashboard = () => {
       // Fetch dashboard stats (this would be a single endpoint in real app)
       const [statsResponse, eventsResponse] = await Promise.all([
         adminAPI.getDashboardStats().catch(() => ({ data: {} })),
-        eventsAPI.getAll().catch(() => ({ data: { events: [] } })),
+        eventsAPI.getAll().catch(() => ({ data: { data: [] } })),
       ]);
 
       setStats({
-        totalEvents: eventsResponse.data.events?.length || 0,
+        totalEvents: eventsResponse.data.data?.length || 0,
         totalClients: statsResponse.data.totalClients || 0,
         totalSubAdmins: statsResponse.data.totalSubAdmins || 0,
         totalRevenue: statsResponse.data.totalRevenue || 0,
-        recentEvents: eventsResponse.data.events?.slice(0, 5) || [],
+        recentEvents: eventsResponse.data.data?.slice(0, 5) || [],
         recentTickets: statsResponse.data.recentTickets || [],
       });
 
@@ -165,7 +165,7 @@ const AdminDashboard = () => {
                 {stats.recentEvents.map((event) => (
                   <div key={event._id} className="event-item">
                     <div className="event-info">
-                      <h4>{event.name}</h4>
+                      <h4>{event.title}</h4>
                       <p className="event-details">
                         <i className="fas fa-calendar"></i>
                         {formatDate(event.date)}
@@ -174,7 +174,7 @@ const AdminDashboard = () => {
                         {event.location}
                         <span className="separator">•</span>
                         <i className="fas fa-dollar-sign"></i>
-                        {formatPrice(event.charges)}
+                        {formatPrice(event.price)}
                       </p>
                     </div>
                     <div className="event-actions">

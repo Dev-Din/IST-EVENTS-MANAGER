@@ -16,13 +16,14 @@ const ManageEvents = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [formData, setFormData] = useState({
-    name: "",
+    title: "",
     description: "",
     date: "",
     location: "",
-    charges: "",
+    price: "",
     capacity: "",
     currency: DEFAULT_EVENT_CURRENCY.code,
+    category: "conference",
   });
 
   useEffect(() => {
@@ -33,11 +34,21 @@ const ManageEvents = () => {
     try {
       setLoading(true);
       const response = await eventsAPI.getAll();
-      setEvents(response.data.events || []);
+
+      // Ensure we have valid data
+      const eventsData = response.data?.data || [];
+
+      // Filter out any invalid events
+      const validEvents = eventsData.filter(
+        (event) => event && event._id && typeof event === "object"
+      );
+
+      setEvents(validEvents);
       setError("");
     } catch (error) {
       console.error("Error fetching events:", error);
       setError("Failed to load events");
+      setEvents([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -46,36 +57,50 @@ const ManageEvents = () => {
   const handleCreate = () => {
     setEditingEvent(null);
     setFormData({
-      name: "",
+      title: "",
       description: "",
       date: "",
       location: "",
-      charges: "",
+      price: "",
       capacity: "",
       currency: DEFAULT_EVENT_CURRENCY.code,
+      category: "conference",
     });
     setShowModal(true);
   };
 
   const handleEdit = (event) => {
+    // Safety check for valid event
+    if (!event || !event._id) {
+      console.error("Invalid event provided to handleEdit");
+      return;
+    }
+
     setEditingEvent(event);
     setFormData({
-      name: event.name,
+      title: event.title || "",
       description: event.description || "",
-      date: new Date(event.date).toISOString().slice(0, 16),
-      location: event.location,
-      charges: event.charges.toString(),
-      capacity: event.capacity.toString(),
+      date: event.date ? new Date(event.date).toISOString().slice(0, 16) : "",
+      location: event.location || "",
+      price: event.price ? event.price.toString() : "0",
+      capacity: event.capacity ? event.capacity.toString() : "1",
       currency: event.currency || DEFAULT_EVENT_CURRENCY.code,
+      category: event.category || "conference",
     });
     setShowModal(true);
   };
 
   const handleDelete = async (eventId) => {
+    // Safety check for valid eventId
+    if (!eventId) {
+      console.error("Invalid eventId provided to handleDelete");
+      return;
+    }
+
     if (window.confirm("Are you sure you want to delete this event?")) {
       try {
         await eventsAPI.delete(eventId);
-        setEvents(events.filter((event) => event._id !== eventId));
+        setEvents(events.filter((event) => event && event._id !== eventId));
       } catch (error) {
         console.error("Error deleting event:", error);
         alert("Failed to delete event");
@@ -88,7 +113,7 @@ const ManageEvents = () => {
     try {
       const eventData = {
         ...formData,
-        charges: parseFloat(formData.charges),
+        price: parseFloat(formData.price),
         capacity: parseInt(formData.capacity),
       };
 
@@ -160,15 +185,17 @@ const ManageEvents = () => {
           </div>
         ) : (
           <div className="events-grid">
-            {events.map((event) => (
-              <EventCard
-                key={event._id}
-                event={event}
-                showActions={true}
-                onEdit={() => handleEdit(event)}
-                onDelete={() => handleDelete(event._id)}
-              />
-            ))}
+            {events
+              .filter((event) => event && event._id) // Filter out undefined/null events
+              .map((event) => (
+                <EventCard
+                  key={event._id}
+                  event={event}
+                  showActions={true}
+                  onEdit={() => handleEdit(event)}
+                  onDelete={() => handleDelete(event._id)}
+                />
+              ))}
           </div>
         )}
 
@@ -181,12 +208,12 @@ const ManageEvents = () => {
         >
           <form onSubmit={handleSubmit} className="event-form">
             <div className="form-group">
-              <label htmlFor="name">Event Name *</label>
+              <label htmlFor="title">Event Name *</label>
               <input
                 type="text"
-                id="name"
-                name="name"
-                value={formData.name}
+                id="title"
+                name="title"
+                value={formData.title}
                 onChange={handleChange}
                 required
                 placeholder="Enter event name"
@@ -231,12 +258,12 @@ const ManageEvents = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="charges">Ticket Price *</label>
+              <label htmlFor="price">Ticket Price *</label>
               <input
                 type="number"
-                id="charges"
-                name="charges"
-                value={formData.charges}
+                id="price"
+                name="price"
+                value={formData.price}
                 onChange={handleChange}
                 required
                 min="0"
@@ -275,6 +302,26 @@ const ManageEvents = () => {
                     {currency.isInternational && " - International"}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="category">Category *</label>
+              <select
+                id="category"
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                required
+              >
+                <option value="conference">Conference</option>
+                <option value="workshop">Workshop</option>
+                <option value="seminar">Seminar</option>
+                <option value="concert">Concert</option>
+                <option value="festival">Festival</option>
+                <option value="sports">Sports</option>
+                <option value="networking">Networking</option>
+                <option value="other">Other</option>
               </select>
             </div>
 
