@@ -11,20 +11,11 @@ const path = require("path");
 // Load environment variables
 dotenv.config();
 
-// Import database connection
-const connectDB = require("./config/database");
-
 // Import middleware
 const errorHandler = require("./middleware/errorHandler");
 
 // Import routes
 const authRoutes = require("./routes/postgresAuth");
-const eventRoutes = require("./routes/events");
-const ticketRoutes = require("./routes/tickets");
-const adminRoutes = require("./routes/admin");
-
-// Connect to database
-connectDB();
 
 const app = express();
 
@@ -134,9 +125,6 @@ app.get("/health", (req, res) => {
 
 // API routes
 app.use("/api/auth", authRoutes);
-app.use("/api/events", eventRoutes);
-app.use("/api/tickets", ticketRoutes);
-app.use("/api/admin", adminRoutes);
 
 // Catch-all route for undefined endpoints
 app.all("*", (req, res) => {
