@@ -18,7 +18,7 @@ const connectDB = require("./config/database");
 const errorHandler = require("./middleware/errorHandler");
 
 // Import routes
-const authRoutes = require("./routes/auth");
+const authRoutes = require("./routes/postgresAuth");
 const eventRoutes = require("./routes/events");
 const ticketRoutes = require("./routes/tickets");
 const adminRoutes = require("./routes/admin");
@@ -58,6 +58,9 @@ const corsOptions = {
       "http://localhost:3001",
       // Add your Vercel domain here after deployment
       /\.vercel\.app$/,
+      // Add your Netlify domain here after deployment
+      /\.netlify\.app$/,
+      "https://legitevents.netlify.app",
     ];
 
     if (
@@ -159,8 +162,8 @@ const gracefulShutdown = (signal) => {
     console.log("HTTP server closed.");
 
     // Close database connection
-    const mongoose = require("mongoose");
-    mongoose.connection.close(() => {
+    const { pool } = require("./controllers/postgresAuth");
+    pool.end(() => {
       console.log("Database connection closed.");
       process.exit(0);
     });
