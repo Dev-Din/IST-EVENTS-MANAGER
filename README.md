@@ -2,7 +2,6 @@
 
 A comprehensive, full-stack event management platform built with React and Node.js, featuring advanced PDF generation, QR code tickets, email notifications, and role-based access control.
 
-
 ## ✨ Features
 
 ### 🎯 Core Features
@@ -268,7 +267,6 @@ MIT License - feel free to use this project for learning, portfolio, or commerci
 
 ## 🔗 Links
 
-- **Live Demo**: [Your deployed app URL]
 - **Documentation**: See inline code comments and JSDoc
 - **Issues**: GitHub Issues tab
 - **Support**: Contact through GitHub
