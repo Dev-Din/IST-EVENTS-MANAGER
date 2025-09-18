@@ -2,9 +2,6 @@
 
 A comprehensive, full-stack event management platform built with React and Node.js, featuring advanced PDF generation, QR code tickets, email notifications, and role-based access control.
 
-## 🚀 Live Demo
-
-[Deploy on Vercel](https://vercel.com) - Your app will be live at `https://your-app-name.vercel.app`
 
 ## ✨ Features
 
@@ -146,7 +143,7 @@ JWT_EXPIRE=7d
 NODE_ENV=production
 
 # Frontend URL (Your deployment URL)
-FRONTEND_URL=https://your-app.vercel.app
+FRONTEND_URL=https://your-app.netlify.app
 
 # Email Configuration (Optional - for notifications)
 EMAIL_HOST=smtp.gmail.com
@@ -211,21 +208,41 @@ npm test admin.test.js
 
 ## 🚀 Deployment
 
-### Vercel Deployment (Recommended)
+### Netlify Deployment (Frontend)
 
 1. Fork this repository
-2. Connect to Vercel
-3. Set up MongoDB Atlas
-4. Configure environment variables
-5. Deploy!
+2. Connect to Netlify
+3. Set build command: `cd frontend && npm run build`
+4. Set publish directory: `frontend/build`
+5. Deploy frontend!
+
+### Heroku Deployment (Backend)
+
+1. Create a Heroku app
+2. Set up MongoDB Atlas
+3. Configure environment variables in Heroku
+4. Connect your GitHub repository
+5. Deploy backend!
 
 ### Manual Deployment
 
-1. Build the frontend: `cd frontend && npm run build`
-2. Set up your server with Node.js
-3. Configure environment variables
-4. Start the backend: `cd backend && npm start`
-5. Serve the frontend build files
+1. **Frontend**:
+   ```bash
+   cd frontend && npm run build
+   # Upload build folder to your static hosting service
+   ```
+2. **Backend**:
+   ```bash
+   cd backend
+   npm install --production
+   npm start
+   # Deploy to your Node.js hosting service
+   ```
+
+### Alternative Hosting Options
+
+- **Frontend**: Netlify, GitHub Pages, Firebase Hosting, Surge.sh
+- **Backend**: Heroku, Railway, DigitalOcean, AWS, Google Cloud Platform
 
 ## 📱 Screenshots & Features Demo
 
