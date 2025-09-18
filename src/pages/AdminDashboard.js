@@ -26,11 +26,35 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
 
+      console.log("🔍 Fetching dashboard data...");
+      console.log("🔍 API Base URL:", process.env.REACT_APP_API_URL || "/api");
+
       // Fetch dashboard stats (this would be a single endpoint in real app)
       const [statsResponse, eventsResponse] = await Promise.all([
-        adminAPI.getDashboardStats().catch(() => ({ data: {} })),
-        eventsAPI.getAll().catch(() => ({ data: { events: [] } })),
+        adminAPI.getDashboardStats().catch((error) => {
+          console.error("❌ Dashboard stats API error:", error);
+          console.error(
+            "❌ Error details:",
+            error.response?.data || error.message
+          );
+          console.error("❌ Status:", error.response?.status);
+          if (error.response?.status === 401) {
+            setError("Authentication failed. Please log in again.");
+          }
+          return { data: {} };
+        }),
+        eventsAPI.getAll().catch((error) => {
+          console.error("❌ Events API error:", error);
+          console.error(
+            "❌ Error details:",
+            error.response?.data || error.message
+          );
+          return { data: { events: [] } };
+        }),
       ]);
+
+      console.log("📊 Dashboard stats response:", statsResponse);
+      console.log("📊 Events response:", eventsResponse);
 
       setStats({
         totalEvents: eventsResponse.data.events?.length || 0,
@@ -41,9 +65,16 @@ const AdminDashboard = () => {
         recentTickets: statsResponse.data.recentTickets || [],
       });
 
+      console.log("✅ Stats set:", {
+        totalEvents: eventsResponse.data.events?.length || 0,
+        totalClients: statsResponse.data.totalClients || 0,
+        totalSubAdmins: statsResponse.data.totalSubAdmins || 0,
+        totalRevenue: statsResponse.data.totalRevenue || 0,
+      });
+
       setError("");
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+      console.error("❌ Error fetching dashboard data:", error);
       setError("Failed to load dashboard data");
     } finally {
       setLoading(false);
@@ -174,7 +205,7 @@ const AdminDashboard = () => {
                         {event.location}
                         <span className="separator">•</span>
                         <i className="fas fa-dollar-sign"></i>
-                        {formatPrice(event.charges)}
+                        {formatPrice(event.price)}
                       </p>
                     </div>
                     <div className="event-actions">

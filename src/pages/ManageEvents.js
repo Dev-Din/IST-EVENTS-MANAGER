@@ -64,7 +64,7 @@ const ManageEvents = () => {
       description: event.description || "",
       date: new Date(event.date).toISOString().slice(0, 16),
       location: event.location,
-      charges: event.charges.toString(),
+      charges: event.price.toString(),
       capacity: event.capacity.toString(),
       currency: event.currency || DEFAULT_EVENT_CURRENCY.code,
     });
@@ -88,7 +88,7 @@ const ManageEvents = () => {
     try {
       const eventData = {
         ...formData,
-        charges: parseFloat(formData.charges),
+        price: parseFloat(formData.charges),
         capacity: parseInt(formData.capacity),
       };
 

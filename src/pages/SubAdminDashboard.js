@@ -171,7 +171,7 @@ const SubAdminDashboard = () => {
                         {event.location}
                         <span className="separator">•</span>
                         <i className="fas fa-dollar-sign"></i>
-                        {formatPrice(event.charges)}
+                        {formatPrice(event.price)}
                       </p>
                     </div>
                     <div className="event-actions">

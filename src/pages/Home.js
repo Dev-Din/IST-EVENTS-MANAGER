@@ -45,7 +45,7 @@ const Home = () => {
         case "name":
           return a.name.localeCompare(b.name);
         case "price":
-          return a.charges - b.charges;
+          return a.price - b.price;
         default:
           return 0;
       }

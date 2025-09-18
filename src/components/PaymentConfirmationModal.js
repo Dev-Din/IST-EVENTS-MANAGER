@@ -26,7 +26,7 @@ const PaymentConfirmationModal = ({
   };
 
   const calculateTotal = () => {
-    return event ? event.charges * quantity : 0;
+    return event ? event.price * quantity : 0;
   };
 
   const calculateProcessingFee = () => {
@@ -151,7 +151,7 @@ const PaymentConfirmationModal = ({
               </div>
               <div className="item-price">
                 <span className="price">
-                  {formatPrice(event?.charges, event?.currency)}
+                  {formatPrice(event?.price, event?.currency)}
                 </span>
                 <span className="quantity">
                   × {quantity} ticket{quantity > 1 ? "s" : ""}

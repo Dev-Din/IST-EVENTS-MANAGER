@@ -70,6 +70,22 @@
   margin-bottom: var(--spacing-3xl);
 }
 
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xl);
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.summary-header h2 {
+  margin: 0;
+  color: var(--gray-900);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
 .summary-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

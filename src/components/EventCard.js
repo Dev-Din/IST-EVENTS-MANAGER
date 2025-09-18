@@ -96,7 +96,7 @@ const EventCard = ({ event, onEdit, onDelete, showActions = false }) => {
 
           <div className="info-item">
             <i className="fas fa-dollar-sign"></i>
-            <span>{formatPrice(event.charges, event.currency)}</span>
+            <span>{formatPrice(event.price, event.currency)}</span>
           </div>
         </div>
 

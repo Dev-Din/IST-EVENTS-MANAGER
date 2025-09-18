@@ -1,7 +1,10 @@
 const Ticket = require("../models/Ticket");
 const Event = require("../models/Event");
+const User = require("../models/User");
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
+const emailService = require("../utils/emailService");
+const pdfTicketGenerator = require("../utils/pdfTicketGenerator");
 
 // @desc    Purchase tickets
 // @route   POST /api/tickets/purchase
@@ -60,6 +63,14 @@ const purchaseTickets = asyncHandler(async (req, res, next) => {
   // Populate ticket with event and user details
   await ticket.populate("event", "title date location");
   await ticket.populate("user", "username email fullName");
+
+  // Send ticket confirmation email (don't block response)
+  const user = await User.findById(req.user.id);
+  emailService
+    .sendTicketConfirmationEmail(ticket, user, event)
+    .catch((err) =>
+      console.error("Failed to send ticket confirmation email:", err)
+    );
 
   res.status(201).json({
     success: true,
@@ -148,9 +159,100 @@ const cancelTicket = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Download ticket as PDF
+// @route   GET /api/tickets/:id/download
+// @access  Private
+const downloadTicketPDF = asyncHandler(async (req, res, next) => {
+  const ticket = await Ticket.findById(req.params.id)
+    .populate("event")
+    .populate("user");
+
+  if (!ticket) {
+    return next(new ErrorResponse("Ticket not found", 404));
+  }
+
+  // Check if user owns this ticket or is admin
+  if (
+    ticket.user._id.toString() !== req.user.id &&
+    req.user.role !== "super-admin"
+  ) {
+    return next(
+      new ErrorResponse("Not authorized to download this ticket", 403)
+    );
+  }
+
+  if (ticket.status !== "confirmed" || ticket.paymentStatus !== "completed") {
+    return next(
+      new ErrorResponse("Ticket is not confirmed or payment not completed", 400)
+    );
+  }
+
+  try {
+    const pdfBuffer = await pdfTicketGenerator.generateTicket(
+      ticket,
+      ticket.event,
+      ticket.user
+    );
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="ticket-${ticket.ticketNumber}.pdf"`
+    );
+    res.setHeader("Content-Length", pdfBuffer.length);
+
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("PDF generation error:", error);
+    return next(new ErrorResponse("Failed to generate PDF ticket", 500));
+  }
+});
+
+// @desc    Download all user tickets as PDF
+// @route   GET /api/tickets/download-all
+// @access  Private
+const downloadAllTicketsPDF = asyncHandler(async (req, res, next) => {
+  const tickets = await Ticket.find({
+    user: req.user.id,
+    status: "confirmed",
+    paymentStatus: "completed",
+  })
+    .populate("event")
+    .populate("user");
+
+  if (!tickets.length) {
+    return next(new ErrorResponse("No confirmed tickets found", 404));
+  }
+
+  try {
+    const events = tickets.map((t) => t.event);
+    const users = tickets.map((t) => t.user);
+
+    const pdfBuffer = await pdfTicketGenerator.generateBulkTickets(
+      tickets,
+      events,
+      users
+    );
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="my-tickets-${Date.now()}.pdf"`
+    );
+    res.setHeader("Content-Length", pdfBuffer.length);
+
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Bulk PDF generation error:", error);
+    return next(new ErrorResponse("Failed to generate PDF tickets", 500));
+  }
+});
+
 module.exports = {
   purchaseTickets,
   getMyTickets,
   getTicketsByEvent,
   cancelTicket,
+  downloadTicketPDF,
+  downloadAllTicketsPDF,
 };
