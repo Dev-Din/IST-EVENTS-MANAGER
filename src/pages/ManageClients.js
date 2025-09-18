@@ -11,6 +11,8 @@ const ManageClients = () => {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState(null);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -57,6 +59,32 @@ const ManageClients = () => {
   const handleSendEmail = (client) => {
     // In a real app, this would open an email composer or send via API
     window.open(`mailto:${client.email}`, "_blank");
+  };
+
+  const handleDeleteClick = (client) => {
+    setClientToDelete(client);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!clientToDelete) return;
+
+    try {
+      await adminAPI.deleteClient(clientToDelete._id);
+      setClients(clients.filter((client) => client._id !== clientToDelete._id));
+      setShowDeleteModal(false);
+      setClientToDelete(null);
+      // Show success message (you could add a toast notification here)
+      console.log("Client deleted successfully");
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      setError("Failed to delete client. Please try again.");
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setClientToDelete(null);
   };
 
   const formatDate = (dateString) => {
@@ -321,6 +349,13 @@ const ManageClients = () => {
                             }`}
                           ></i>
                         </button>
+                        <button
+                          onClick={() => handleDeleteClick(client)}
+                          className="btn btn-sm btn-danger"
+                          title="Delete Client"
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -330,6 +365,47 @@ const ManageClients = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h3>Confirm Delete</h3>
+              <button className="modal-close" onClick={handleDeleteCancel}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="delete-confirmation">
+                <div className="warning-icon">
+                  <i className="fas fa-exclamation-triangle"></i>
+                </div>
+                <p>
+                  Are you sure you want to delete the client{" "}
+                  <strong>
+                    {clientToDelete?.fullName || clientToDelete?.username}
+                  </strong>
+                  ?
+                </p>
+                <p className="warning-text">
+                  This action cannot be undone. All client data will be
+                  permanently removed.
+                </p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={handleDeleteCancel}>
+                Cancel
+              </button>
+              <button className="btn btn-danger" onClick={handleDeleteConfirm}>
+                <i className="fas fa-trash"></i>
+                Delete Client
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

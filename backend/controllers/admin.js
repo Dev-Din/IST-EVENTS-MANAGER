@@ -3,6 +3,8 @@ const Event = require("../models/Event");
 const Ticket = require("../models/Ticket");
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
+const CSVGenerator = require("../utils/csvGenerator");
+const PDFReportsGenerator = require("../utils/pdfReportsGenerator");
 
 // @desc    Get all sub-admins
 // @route   GET /api/admin/sub-admins
@@ -13,7 +15,8 @@ const getSubAdmins = asyncHandler(async (req, res, next) => {
   res.json({
     success: true,
     count: subAdmins.length,
-    data: subAdmins,
+    subAdmins: subAdmins,
+    data: subAdmins, // Keep both for backward compatibility
   });
 });
 
@@ -142,7 +145,8 @@ const getClients = asyncHandler(async (req, res, next) => {
   res.json({
     success: true,
     count: clients.length,
-    data: clients,
+    clients: clients,
+    data: clients, // Keep both for backward compatibility
   });
 });
 
@@ -203,6 +207,16 @@ const getDashboardStats = asyncHandler(async (req, res, next) => {
     { $group: { _id: null, total: { $sum: "$totalPrice" } } },
   ]);
 
+  // Get user counts by role
+  const totalClients = await User.countDocuments({
+    role: "client",
+    isActive: true,
+  });
+  const totalSubAdmins = await User.countDocuments({
+    role: "sub-admin",
+    isActive: true,
+  });
+
   res.json({
     success: true,
     data: {
@@ -210,6 +224,8 @@ const getDashboardStats = asyncHandler(async (req, res, next) => {
       totalEvents,
       totalTickets,
       totalRevenue: totalRevenue[0]?.total || 0,
+      totalClients,
+      totalSubAdmins,
     },
   });
 });
@@ -366,6 +382,205 @@ const getReports = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Export data as CSV
+// @route   POST /api/admin/export/:type
+// @access  Private/Admin
+const exportCSV = asyncHandler(async (req, res, next) => {
+  const { type } = req.params;
+  const { startDate, endDate } = req.body;
+
+  let data, csvContent, filename;
+
+  // Build date filter
+  let dateFilter = {};
+  if (startDate || endDate) {
+    dateFilter.createdAt = {};
+    if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
+    if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
+  }
+
+  switch (type) {
+    case "users":
+      data = await User.find({ isActive: true, ...dateFilter }).select(
+        "-password"
+      );
+      csvContent = CSVGenerator.generateUsersCSV(data);
+      filename = `users-export-${Date.now()}.csv`;
+      break;
+
+    case "events":
+      data = await Event.find({ isActive: true, ...dateFilter }).populate(
+        "createdBy",
+        "username fullName"
+      );
+      csvContent = CSVGenerator.generateEventsCSV(data);
+      filename = `events-export-${Date.now()}.csv`;
+      break;
+
+    case "tickets":
+      data = await Ticket.find(dateFilter)
+        .populate("event", "title currency")
+        .populate("user", "username email fullName");
+      csvContent = CSVGenerator.generateTicketsCSV(data);
+      filename = `tickets-export-${Date.now()}.csv`;
+      break;
+
+    case "revenue":
+      data = await Ticket.aggregate([
+        { $match: { status: "confirmed", paymentStatus: "completed" } },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
+            },
+            totalRevenue: { $sum: "$totalPrice" },
+            totalTickets: { $sum: "$quantity" },
+            averageTicketPrice: { $avg: "$totalPrice" },
+          },
+        },
+        { $sort: { "_id.year": -1, "_id.month": -1 } },
+      ]);
+      csvContent = CSVGenerator.generateRevenueCSV(data);
+      filename = `revenue-export-${Date.now()}.csv`;
+      break;
+
+    case "comprehensive":
+      const users = await User.find({ isActive: true }).select("-password");
+      const events = await Event.find({ isActive: true }).populate(
+        "createdBy",
+        "username fullName"
+      );
+      const tickets = await Ticket.find({})
+        .populate("event", "title currency")
+        .populate("user", "username email fullName");
+
+      // Combine all data
+      csvContent = "COMPREHENSIVE DATA EXPORT\n\n";
+      csvContent += "USERS:\n" + CSVGenerator.generateUsersCSV(users) + "\n\n";
+      csvContent +=
+        "EVENTS:\n" + CSVGenerator.generateEventsCSV(events) + "\n\n";
+      csvContent += "TICKETS:\n" + CSVGenerator.generateTicketsCSV(tickets);
+      filename = `comprehensive-export-${Date.now()}.csv`;
+      break;
+
+    default:
+      return next(new ErrorResponse("Invalid export type", 400));
+  }
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.send(csvContent);
+});
+
+// @desc    Export data as PDF
+// @route   POST /api/admin/export-pdf/:type
+// @access  Private/Admin
+const exportPDF = asyncHandler(async (req, res, next) => {
+  const { type } = req.params;
+  const { startDate, endDate } = req.body;
+
+  let data, filename;
+
+  // Build date filter
+  let dateFilter = {};
+  if (startDate || endDate) {
+    dateFilter.createdAt = {};
+    if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
+    if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
+  }
+
+  switch (type) {
+    case "users":
+      data = await User.find({ isActive: true, ...dateFilter }).select(
+        "-password"
+      );
+      filename = `users-report-${Date.now()}.pdf`;
+      break;
+
+    case "events":
+      data = await Event.find({ isActive: true, ...dateFilter }).populate(
+        "createdBy",
+        "username fullName"
+      );
+      filename = `events-report-${Date.now()}.pdf`;
+      break;
+
+    case "tickets":
+      data = await Ticket.find(dateFilter)
+        .populate("event", "title currency")
+        .populate("user", "username email fullName");
+      filename = `tickets-report-${Date.now()}.pdf`;
+      break;
+
+    case "revenue":
+      data = await Ticket.aggregate([
+        { $match: { status: "confirmed", paymentStatus: "completed" } },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
+            },
+            totalRevenue: { $sum: "$totalPrice" },
+            totalTickets: { $sum: "$quantity" },
+            averageTicketPrice: { $avg: "$totalPrice" },
+          },
+        },
+        { $sort: { "_id.year": -1, "_id.month": -1 } },
+      ]);
+      filename = `revenue-report-${Date.now()}.pdf`;
+      break;
+
+    case "comprehensive":
+      data = {
+        summary: {
+          totalUsers: await User.countDocuments({ isActive: true }),
+          totalEvents: await Event.countDocuments({ isActive: true }),
+          totalTickets: await Ticket.countDocuments({ status: "confirmed" }),
+          totalRevenue:
+            (
+              await Ticket.aggregate([
+                { $match: { status: "confirmed", paymentStatus: "completed" } },
+                { $group: { _id: null, total: { $sum: "$totalPrice" } } },
+              ])
+            )[0]?.total || 0,
+        },
+        users: await User.find({ isActive: true })
+          .select("-password")
+          .limit(50),
+        events: await Event.find({ isActive: true })
+          .populate("createdBy", "username fullName")
+          .limit(30),
+        tickets: await Ticket.find({})
+          .populate("event", "title currency")
+          .populate("user", "username email fullName")
+          .limit(50),
+      };
+      filename = `comprehensive-report-${Date.now()}.pdf`;
+      break;
+
+    default:
+      return next(new ErrorResponse("Invalid export type", 400));
+  }
+
+  try {
+    const pdfBuffer = await PDFReportsGenerator.generateReport(type, data, {
+      startDate,
+      endDate,
+    });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Length", pdfBuffer.length);
+
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("PDF generation error:", error);
+    return next(new ErrorResponse("Failed to generate PDF report", 500));
+  }
+});
+
 module.exports = {
   getSubAdmins,
   createSubAdmin,
@@ -377,4 +592,6 @@ module.exports = {
   deleteClient,
   getDashboardStats,
   getReports,
+  exportCSV,
+  exportPDF,
 };

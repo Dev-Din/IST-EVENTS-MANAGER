@@ -62,6 +62,11 @@ export const eventsAPI = {
 export const ticketsAPI = {
   purchase: (purchaseData) => api.post("/tickets/purchase", purchaseData),
   getMyTickets: () => api.get("/tickets/my-tickets"),
+  downloadTicket: (ticketId) =>
+    api.get(`/tickets/${ticketId}/download`, { responseType: "blob" }),
+  downloadAllTickets: () =>
+    api.get("/tickets/download-all", { responseType: "blob" }),
+  cancelTicket: (ticketId) => api.put(`/tickets/${ticketId}/cancel`),
 };
 
 export const adminAPI = {
@@ -92,6 +97,11 @@ export const adminAPI = {
     ),
   exportData: (dataType, options = {}) => {
     return api.post(`/admin/export/${dataType}`, options, {
+      responseType: "blob", // Important for file downloads
+    });
+  },
+  exportPDF: (dataType, options = {}) => {
+    return api.post(`/admin/export-pdf/${dataType}`, options, {
       responseType: "blob", // Important for file downloads
     });
   },

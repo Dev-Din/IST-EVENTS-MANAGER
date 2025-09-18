@@ -11,6 +11,8 @@ const {
   deleteClient,
   getDashboardStats,
   getReports,
+  exportCSV,
+  exportPDF,
 } = require("../controllers/admin");
 const { protect, authorize } = require("../middleware/auth");
 
@@ -33,5 +35,9 @@ router.delete("/clients/:id", deleteClient);
 // Dashboard and reports
 router.get("/dashboard", getDashboardStats);
 router.get("/reports", getReports);
+
+// Export routes
+router.post("/export/:type", exportCSV);
+router.post("/export-pdf/:type", exportPDF);
 
 module.exports = router;

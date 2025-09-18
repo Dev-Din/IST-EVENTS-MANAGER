@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
+const emailService = require("../utils/emailService");
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -10,7 +11,7 @@ const register = asyncHandler(async (req, res, next) => {
 
   // Check if user already exists
   const existingUser = await User.findOne({
-    $or: [{ email }, { username }],
+    $or: [{ email: email.toLowerCase() }, { username }],
   });
 
   if (existingUser) {
@@ -29,6 +30,26 @@ const register = asyncHandler(async (req, res, next) => {
 
   // Generate JWT token
   const token = user.getSignedJwtToken();
+
+  // Set token as cookie
+  const options = {
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // Allow cross-origin in dev
+  };
+
+  res.cookie("token", token, options);
+
+  // Send welcome email (don't block response)
+  emailService
+    .sendWelcomeEmail(user)
+    .catch((err) => console.error("Failed to send welcome email:", err));
+
+  // Send admin notification (don't block response)
+  emailService
+    .sendAdminNotificationEmail(user)
+    .catch((err) => console.error("Failed to send admin notification:", err));
 
   res.status(201).json({
     success: true,
@@ -58,7 +79,9 @@ const login = asyncHandler(async (req, res, next) => {
   }
 
   // Check for user
-  const user = await User.findOne({ email }).select("+password");
+  const user = await User.findOne({ email: email.toLowerCase() }).select(
+    "+password"
+  );
 
   if (!user) {
     return next(new ErrorResponse("Invalid credentials", 401));
@@ -73,6 +96,16 @@ const login = asyncHandler(async (req, res, next) => {
 
   // Generate JWT token
   const token = user.getSignedJwtToken();
+
+  // Set token as cookie
+  const options = {
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // Allow cross-origin in dev
+  };
+
+  res.cookie("token", token, options);
 
   res.json({
     success: true,
@@ -162,6 +195,16 @@ const updatePassword = asyncHandler(async (req, res, next) => {
   await user.save();
 
   const token = user.getSignedJwtToken();
+
+  // Set token as cookie
+  const options = {
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // Allow cross-origin in dev
+  };
+
+  res.cookie("token", token, options);
 
   res.json({
     success: true,

@@ -134,12 +134,12 @@ const EventDetails = () => {
 
   return (
     <div className="event-details-page">
-            {/* Hero Section */}
+      {/* Hero Section */}
       <div className="event-hero">
         <div className="hero-background">
           {getEventImage() && !imageError ? (
-            <img 
-              src={getEventImage()} 
+            <img
+              src={getEventImage()}
               alt={event.name}
               onError={() => setImageError(true)}
               className="hero-image"
@@ -229,7 +229,7 @@ const EventDetails = () => {
                   <div className="card-content">
                     <h3>Ticket Price</h3>
                     <p className="price-display">
-                      {formatPrice(event.charges, event.currency)}
+                      {formatPrice(event.price, event.currency)}
                     </p>
                     <span className="price-note">per person</span>
                   </div>
@@ -280,7 +280,7 @@ const EventDetails = () => {
                 <div className="booking-header">
                   <div className="price-highlight">
                     <span className="price">
-                      {formatPrice(event.charges, event.currency)}
+                      {formatPrice(event.price, event.currency)}
                     </span>
                     <span className="price-label">per ticket</span>
                   </div>

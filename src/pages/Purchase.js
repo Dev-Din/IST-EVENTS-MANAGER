@@ -48,7 +48,7 @@ const Purchase = () => {
   };
 
   const calculateTotal = () => {
-    return event ? event.charges * quantity : 0;
+    return event ? event.price * quantity : 0;
   };
 
   const calculateProcessingFee = () => {
@@ -167,14 +167,14 @@ const Purchase = () => {
                 <div className="info-row">
                   <span className="label">Price per ticket:</span>
                   <span className="value">
-                    {formatPrice(event.charges, event.currency)}
+                    {formatPrice(event.price, event.currency)}
                   </span>
                 </div>
                 <div className="info-row">
                   <span className="label">Total paid:</span>
                   <span className="value">
                     {formatPrice(
-                      event.charges * purchasedQuantity,
+                      event.price * purchasedQuantity,
                       event.currency
                     )}
                   </span>
@@ -234,7 +234,7 @@ const Purchase = () => {
                 </div>
                 <div className="detail-item">
                   <i className="fas fa-dollar-sign"></i>
-                  <span>{formatPrice(event.charges, event.currency)}</span>
+                  <span>{formatPrice(event.price, event.currency)}</span>
                 </div>
               </div>
               {event.description && (
@@ -302,8 +302,7 @@ const Purchase = () => {
                   </p>
                   <div className="price-calculation">
                     <span>
-                      {formatPrice(event.charges, event.currency)} × {quantity}{" "}
-                      ={" "}
+                      {formatPrice(event.price, event.currency)} × {quantity} ={" "}
                     </span>
                     <strong>
                       {formatPrice(calculateTotal(), event.currency)}

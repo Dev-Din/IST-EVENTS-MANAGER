@@ -27,6 +27,46 @@ const MyTickets = () => {
     }
   };
 
+  const handleDownloadTicket = async (ticketId, ticketNumber) => {
+    try {
+      const response = await ticketsAPI.downloadTicket(ticketId);
+
+      // Create blob and download
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `ticket-${ticketNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading ticket:", error);
+      alert("Failed to download ticket. Please try again.");
+    }
+  };
+
+  const handleDownloadAllTickets = async () => {
+    try {
+      const response = await ticketsAPI.downloadAllTickets();
+
+      // Create blob and download
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `my-tickets-${Date.now()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading tickets:", error);
+      alert("Failed to download tickets. Please try again.");
+    }
+  };
+
   const formatDate = (dateString) => {
     const options = {
       year: "numeric",
@@ -116,6 +156,17 @@ const MyTickets = () => {
         ) : (
           <>
             <div className="tickets-summary">
+              <div className="summary-header">
+                <h2>My Tickets Summary</h2>
+                <button
+                  className="btn btn-success"
+                  onClick={handleDownloadAllTickets}
+                  title="Download all tickets as PDF"
+                >
+                  <i className="fas fa-download"></i>
+                  Download All PDF
+                </button>
+              </div>
               <div className="summary-stats">
                 <div className="stat">
                   <span className="number">{tickets.length}</span>
@@ -138,7 +189,7 @@ const MyTickets = () => {
                         (total, ticket) =>
                           total +
                           (ticket.totalAmount ||
-                            (ticket.unitPrice || ticket.event.charges || 0) *
+                            (ticket.unitPrice || ticket.event.price || 0) *
                               (ticket.quantity || 1)),
                         0
                       )
@@ -207,9 +258,8 @@ const MyTickets = () => {
                           <span className="value">
                             {formatPrice(
                               ticket.totalAmount ||
-                                (ticket.unitPrice ||
-                                  ticket.event.charges ||
-                                  0) * (ticket.quantity || 1)
+                                (ticket.unitPrice || ticket.event.price || 0) *
+                                  (ticket.quantity || 1)
                             )}
                           </span>
                         </div>
@@ -250,6 +300,16 @@ const MyTickets = () => {
                     >
                       <i className="fas fa-print"></i>
                       Print Ticket
+                    </button>
+
+                    <button
+                      className="btn btn-success"
+                      onClick={() =>
+                        handleDownloadTicket(ticket._id, ticket.ticketNumber)
+                      }
+                    >
+                      <i className="fas fa-download"></i>
+                      Download PDF
                     </button>
                   </div>
 
