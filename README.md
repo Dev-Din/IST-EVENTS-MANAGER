@@ -94,7 +94,7 @@ Event Organising System/
 
 - Node.js >= 16.0.0
 - npm >= 8.0.0
-- MongoDB Atlas account (or local MongoDB)
+- MongoDB installed locally (or MongoDB Atlas account)
 
 ### Backend Setup
 
@@ -102,7 +102,13 @@ Event Organising System/
 cd backend
 npm install
 cp ../env.example .env
-# Configure your environment variables
+# Configure your environment variables (see Environment Variables section)
+
+# Make sure MongoDB is running locally
+# On Ubuntu/Debian: sudo systemctl start mongod
+# On macOS with Homebrew: brew services start mongodb-community
+# On Windows: Start MongoDB service from Services panel
+
 npm run dev  # Development server
 npm start    # Production server
 ```
@@ -131,18 +137,21 @@ cd frontend && npm start
 Copy `env.example` to `.env` in the backend directory and configure:
 
 ```env
-# MongoDB Connection (Get from MongoDB Atlas)
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/legitevents?retryWrites=true&w=majority
+# MongoDB Connection
+# For local MongoDB:
+MONGODB_URI=mongodb://localhost:27017/legitevents
+# For MongoDB Atlas (if using cloud):
+# MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/legitevents?retryWrites=true&w=majority
 
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-here-make-it-long-and-random
 JWT_EXPIRE=7d
 
 # Environment
-NODE_ENV=production
+NODE_ENV=development
 
 # Frontend URL (Your deployment URL)
-FRONTEND_URL=https://your-app.netlify.app
+FRONTEND_URL=http://localhost:3000
 
 # Email Configuration (Optional - for notifications)
 EMAIL_HOST=smtp.gmail.com
@@ -218,7 +227,7 @@ npm test admin.test.js
 ### Heroku Deployment (Backend)
 
 1. Create a Heroku app
-2. Set up MongoDB Atlas
+2. Set up MongoDB Atlas (for production) or use Heroku MongoDB add-ons
 3. Configure environment variables in Heroku
 4. Connect your GitHub repository
 5. Deploy backend!
