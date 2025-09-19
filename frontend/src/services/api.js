@@ -60,6 +60,12 @@ export const authAPI = {
   getProfileStats: () => api.get("/auth/profile-stats"),
   deleteAccount: (password) =>
     api.delete("/auth/account", { data: { password } }),
+  // Password reset endpoints
+  forgotPassword: (email) => api.post("/auth/forgot-password", { email }),
+  resetPassword: (token, password) =>
+    api.put(`/auth/reset-password/${token}`, { password }),
+  verifyTempCredentials: (credentials) =>
+    api.post("/auth/verify-temp-credentials", credentials),
 };
 
 export const eventsAPI = {

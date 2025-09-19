@@ -202,6 +202,12 @@ const Login = () => {
         </form>
 
         <div className="auth-footer">
+          <div className="auth-links">
+            <Link to="/forgot-password" className="auth-link">
+              <i className="fas fa-key"></i>
+              Forgot Password?
+            </Link>
+          </div>
           <p>
             Don't have an account?
             <Link to="/register" className="auth-link">

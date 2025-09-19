@@ -8,24 +8,65 @@ class EmailService {
   createTransporter() {
     // Configure based on environment
     if (process.env.NODE_ENV === "production") {
-      // Production email configuration (e.g., SendGrid, AWS SES)
-      return nodemailer.createTransport({
-        service: "gmail", // or your preferred service
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-      });
+      // Production: Use SendGrid, AWS SES, or Gmail
+      if (process.env.SENDGRID_API_KEY) {
+        return nodemailer.createTransport({
+          service: "sendgrid",
+          auth: {
+            user: "apikey",
+            pass: process.env.SENDGRID_API_KEY,
+          },
+        });
+      } else if (process.env.AWS_ACCESS_KEY_ID) {
+        return nodemailer.createTransport({
+          SES: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            region: process.env.AWS_REGION,
+          },
+        });
+      } else {
+        // Fallback to Gmail
+        return nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+      }
     } else {
-      // Development: Use Ethereal Email for testing
-      return nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        auth: {
-          user: "ethereal.user@ethereal.email",
-          pass: "ethereal.pass",
-        },
-      });
+      // Development: Use configured service or Ethereal
+      if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        // Use Gmail for development
+        return nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+      } else if (process.env.ETHEREAL_USER && process.env.ETHEREAL_PASS) {
+        // Use Ethereal Email
+        return nodemailer.createTransport({
+          host: "smtp.ethereal.email",
+          port: 587,
+          auth: {
+            user: process.env.ETHEREAL_USER,
+            pass: process.env.ETHEREAL_PASS,
+          },
+        });
+      } else {
+        // Default Ethereal (current)
+        return nodemailer.createTransport({
+          host: "smtp.ethereal.email",
+          port: 587,
+          auth: {
+            user: "ethereal.user@ethereal.email",
+            pass: "ethereal.pass",
+          },
+        });
+      }
     }
   }
 
@@ -294,6 +335,91 @@ class EmailService {
     );
 
     return await Promise.all(promises);
+  }
+
+  // Send new credentials email
+  async sendNewCredentialsEmail(user, tempPassword, resetUrl) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+          .header { background: #dc2626; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; }
+          .credentials-box { background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 15px 0; text-align: center; }
+          .button { background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+          .footer { background: #f3f4f6; padding: 15px; text-align: center; font-size: 12px; }
+          .warning { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin: 15px 0; }
+          .temp-password { font-family: monospace; background: #f3f4f6; padding: 10px; border-radius: 5px; font-size: 18px; font-weight: bold; color: #dc2626; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔐 New Login Credentials</h1>
+          </div>
+          <div class="content">
+            <h2>Hello ${user.fullName || user.username}!</h2>
+            <p>You have requested to reset your password for your LegitEvents account.</p>
+            <p>Your new temporary login credentials are:</p>
+            
+            <div class="credentials-box">
+              <h3>📧 Email: ${user.email}</h3>
+              <h3>🔑 Temporary Password:</h3>
+              <div class="temp-password">${tempPassword}</div>
+              <p><strong>⚠️ This password will expire in 10 minutes</strong></p>
+            </div>
+            
+            <div class="warning">
+              <p><strong>🚨 Important Security Information:</strong></p>
+              <ul>
+                <li>Use these credentials to login immediately</li>
+                <li>You will be prompted to change your password after login</li>
+                <li>These credentials expire in 10 minutes</li>
+                <li>If you didn't request this reset, please contact support immediately</li>
+              </ul>
+            </div>
+            
+            <p style="text-align: center; margin: 20px 0;">
+              <a href="${process.env.FRONTEND_URL}/login" class="button">
+                Login with New Credentials
+              </a>
+            </p>
+            
+            <p style="text-align: center;">
+              <a href="${resetUrl}" class="button" style="background: #059669;">
+                Or Reset Password Directly
+              </a>
+            </p>
+            
+            <div style="background: #f0fdf4; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <h4>📋 Next Steps:</h4>
+              <ol>
+                <li>Login using the credentials above</li>
+                <li>You will be prompted to change your password</li>
+                <li>Choose a strong, unique password</li>
+                <li>Keep your new password secure</li>
+              </ol>
+            </div>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} LegitEvents. All rights reserved.</p>
+            <p>If you have any questions, contact us at support@legitevents.com</p>
+            <p><strong>Security Notice:</strong> Never share your login credentials with anyone.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return await this.sendEmail({
+      to: user.email,
+      subject: "🔐 New Login Credentials - LegitEvents",
+      html,
+      text: `New login credentials for LegitEvents. Email: ${user.email}, Temporary Password: ${tempPassword}. Expires in 10 minutes.`,
+    });
   }
 }
 

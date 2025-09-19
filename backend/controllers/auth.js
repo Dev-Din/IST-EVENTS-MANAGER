@@ -2,6 +2,7 @@ const User = require("../models/User");
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
 const emailService = require("../utils/emailService");
+const crypto = require("crypto");
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -228,6 +229,188 @@ const logout = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Forgot password - Clients and Sub-admins only
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const forgotPassword = asyncHandler(async (req, res, next) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return next(new ErrorResponse("Please provide an email address", 400));
+  }
+
+  // Find user and check if they're eligible for password reset
+  const user = await User.findOne({
+    email: email.toLowerCase(),
+    role: { $in: ["client", "sub-admin"] }, // Only clients and sub-admins
+    isActive: true,
+  });
+
+  if (!user) {
+    return next(
+      new ErrorResponse("No eligible user found with that email", 404)
+    );
+  }
+
+  // Generate new temporary password
+  const tempPassword = crypto.randomBytes(8).toString("hex");
+
+  // Generate reset token for verification
+  const resetToken = user.getResetPasswordToken();
+
+  // Update user with temporary password and reset token
+  user.password = tempPassword;
+  user.resetPasswordToken = resetToken;
+  user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+  await user.save();
+
+  // Create reset URL for password change
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+  try {
+    // Send email with new credentials
+    await emailService.sendNewCredentialsEmail(user, tempPassword, resetUrl);
+
+    res.status(200).json({
+      success: true,
+      message: "New login credentials have been sent to your email",
+    });
+  } catch (error) {
+    console.error("Password reset email error:", error);
+
+    // Clear reset token if email fails
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    return next(new ErrorResponse("Email could not be sent", 500));
+  }
+});
+
+// @desc    Reset password with new password
+// @route   PUT /api/auth/reset-password/:resettoken
+// @access  Public
+const resetPassword = asyncHandler(async (req, res, next) => {
+  const { password } = req.body;
+
+  if (!password) {
+    return next(new ErrorResponse("Please provide a new password", 400));
+  }
+
+  // Get hashed token
+  const resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(req.params.resettoken)
+    .digest("hex");
+
+  const user = await User.findOne({
+    resetPasswordToken,
+    resetPasswordExpire: { $gt: Date.now() },
+    role: { $in: ["client", "sub-admin"] }, // Only clients and sub-admins
+  });
+
+  if (!user) {
+    return next(new ErrorResponse("Invalid or expired reset token", 400));
+  }
+
+  // Set new password
+  user.password = password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+
+  await user.save();
+
+  // Generate JWT token
+  const token = user.getSignedJwtToken();
+
+  // Set token as cookie
+  const options = {
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+  };
+
+  res.cookie("token", token, options);
+
+  res.status(200).json({
+    success: true,
+    message: "Password reset successful",
+    token,
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role,
+      country: user.country,
+      currency: user.currency,
+    },
+  });
+});
+
+// @desc    Verify temporary credentials
+// @route   POST /api/auth/verify-temp-credentials
+// @access  Public
+const verifyTempCredentials = asyncHandler(async (req, res, next) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return next(new ErrorResponse("Please provide email and password", 400));
+  }
+
+  const user = await User.findOne({
+    email: email.toLowerCase(),
+    role: { $in: ["client", "sub-admin"] },
+    isActive: true,
+  }).select("+password");
+
+  if (!user) {
+    return next(new ErrorResponse("Invalid credentials", 401));
+  }
+
+  // Check if this is a temporary password (has reset token)
+  if (!user.resetPasswordToken || user.resetPasswordExpire < Date.now()) {
+    return next(new ErrorResponse("Temporary credentials have expired", 401));
+  }
+
+  const isMatch = await user.comparePassword(password);
+
+  if (!isMatch) {
+    return next(new ErrorResponse("Invalid credentials", 401));
+  }
+
+  // Generate JWT token
+  const token = user.getSignedJwtToken();
+
+  // Set token as cookie
+  const options = {
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+  };
+
+  res.cookie("token", token, options);
+
+  res.status(200).json({
+    success: true,
+    message: "Temporary credentials verified. Please change your password.",
+    token,
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role,
+      country: user.country,
+      currency: user.currency,
+    },
+    requiresPasswordChange: true,
+  });
+});
+
 module.exports = {
   register,
   login,
@@ -235,4 +418,7 @@ module.exports = {
   updateProfile,
   updatePassword,
   logout,
+  forgotPassword,
+  resetPassword,
+  verifyTempCredentials,
 };
