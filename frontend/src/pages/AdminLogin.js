@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../App";
 import { authAPI } from "../services/api";
 import "./AdminLogin.css";
@@ -182,9 +182,20 @@ const AdminLogin = () => {
         </form>
 
         <div className="admin-login-footer">
+          <div className="admin-auth-links">
+            <Link to="/forgot-password" className="admin-auth-link">
+              <i className="fas fa-key"></i>
+              Forgot Password? (Sub-Admins Only)
+            </Link>
+          </div>
           <p className="security-notice">
             <i className="fas fa-info-circle"></i>
             This is a secure area. All login attempts are monitored.
+          </p>
+          <p className="password-reset-info">
+            <i className="fas fa-exclamation-triangle"></i>
+            Password reset is available for Sub-Admins only. Super-Admins must
+            contact system administrator.
           </p>
         </div>
       </div>

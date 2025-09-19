@@ -163,11 +163,117 @@
   text-decoration: none;
   margin-left: var(--spacing-xs);
   transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .auth-link:hover {
   color: var(--primary-hover);
   text-decoration: underline;
+}
+
+.auth-links {
+  margin-bottom: var(--spacing-md);
+}
+
+.auth-links .auth-link {
+  margin-left: 0;
+  font-size: var(--font-size-sm);
+}
+
+.auth-links .auth-link i {
+  font-size: var(--font-size-xs);
+}
+
+/* Password Reset Specific Styles */
+.success-message {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  text-align: center;
+}
+
+.success-message p {
+  margin: var(--spacing-sm) 0;
+  color: var(--gray-700);
+}
+
+.email-highlight {
+  font-weight: 600;
+  color: var(--primary-color);
+  background: rgba(59, 130, 246, 0.1);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  display: inline-block;
+  margin: var(--spacing-xs) 0;
+}
+
+.auth-info {
+  background: var(--gray-50);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  font-size: var(--font-size-sm);
+}
+
+.auth-info h4 {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--gray-700);
+  font-size: var(--font-size-sm);
+}
+
+.auth-info ul {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+  color: var(--gray-600);
+}
+
+.auth-info li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.password-requirements {
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+}
+
+.password-requirements ul {
+  margin: var(--spacing-xs) 0 0 0;
+  padding-left: var(--spacing-md);
+  list-style: none;
+}
+
+.password-requirements li {
+  margin-bottom: var(--spacing-xs);
+  position: relative;
+}
+
+.password-requirements li::before {
+  content: "✓";
+  position: absolute;
+  left: -var(--spacing-md);
+  font-weight: bold;
+}
+
+.password-requirements li.valid {
+  color: var(--success-color);
+}
+
+.password-requirements li.invalid {
+  color: var(--danger-color);
+}
+
+.password-requirements li.invalid::before {
+  content: "✗";
+}
+
+.error-text {
+  color: var(--danger-color);
+  font-size: var(--font-size-xs);
+  margin-top: var(--spacing-xs);
 }
 
 /* Alert in Auth Forms */

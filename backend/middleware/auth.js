@@ -324,6 +324,41 @@ const authRateLimit = (maxAttempts = 5, windowMs = 15 * 60 * 1000) => {
   };
 };
 
+// Rate limiting for password reset attempts
+const passwordResetRateLimit = (maxAttempts = 3, windowMs = 60 * 60 * 1000) => {
+  // 3 attempts per hour
+  const attempts = new Map();
+
+  return (req, res, next) => {
+    const key = req.ip + req.body.email;
+    const now = Date.now();
+
+    if (attempts.has(key)) {
+      const userAttempts = attempts.get(key);
+      // Remove old attempts outside the window
+      userAttempts.attempts = userAttempts.attempts.filter(
+        (attempt) => now - attempt < windowMs
+      );
+
+      if (userAttempts.attempts.length >= maxAttempts) {
+        return res.status(429).json({
+          success: false,
+          message: "Too many password reset attempts. Please try again later.",
+          retryAfter: Math.ceil(
+            (userAttempts.attempts[0] + windowMs - now) / 1000
+          ),
+        });
+      }
+
+      userAttempts.attempts.push(now);
+    } else {
+      attempts.set(key, { attempts: [now] });
+    }
+
+    next();
+  };
+};
+
 module.exports = {
   protect,
   authorize,
@@ -334,4 +369,5 @@ module.exports = {
   requireOwnership,
   canModifyEvent,
   authRateLimit,
+  passwordResetRateLimit,
 };

@@ -6,6 +6,9 @@ import { useAuth } from "../App";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
+import ForgotPassword from "../pages/ForgotPassword";
+import TempCredentialsLogin from "../pages/TempCredentialsLogin";
+import ChangePassword from "../pages/ChangePassword";
 import EventDetails from "../pages/EventDetails";
 import Purchase from "../pages/Purchase";
 import MyTickets from "../pages/MyTickets";
@@ -74,6 +77,40 @@ export default function AppRoutes() {
         }
       />
 
+      {/* Password Reset Routes */}
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPassword />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/temp-credentials-login"
+        element={
+          <PublicRoute>
+            <TempCredentialsLogin />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/change-password"
+        element={
+          <ProtectedRoute>
+            <ChangePassword />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reset-password/:token"
+        element={
+          <PublicRoute>
+            <ChangePassword />
+          </PublicRoute>
+        }
+      />
+
       {/* Protected Client Routes */}
       <Route
         path="/purchase/:eventId"
@@ -108,7 +145,7 @@ export default function AppRoutes() {
         }
       />
 
-      {/* Super Admin Routes */}  
+      {/* Super Admin Routes */}
       <Route
         path="/admin/dashboard"
         element={

@@ -7,12 +7,20 @@ const {
   updateProfile,
   updatePassword,
   logout,
+  forgotPassword,
+  resetPassword,
+  verifyTempCredentials,
 } = require("../controllers/auth");
-const { protect } = require("../middleware/auth");
+const { protect, passwordResetRateLimit } = require("../middleware/auth");
 
 // Public routes
 router.post("/register", register);
 router.post("/login", login);
+
+// Password reset routes (public with rate limiting)
+router.post("/forgot-password", passwordResetRateLimit(), forgotPassword);
+router.put("/reset-password/:resettoken", resetPassword);
+router.post("/verify-temp-credentials", verifyTempCredentials);
 
 // Protected routes
 router.get("/me", protect, getMe);
