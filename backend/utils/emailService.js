@@ -3,87 +3,66 @@ require("dotenv").config();
 
 class EmailService {
   constructor() {
-    this.transporter = this.createTransporter();
+    this.transporter = null;
+  }
+
+  getTransporter() {
+    if (!this.transporter) {
+      this.transporter = this.createTransporter();
+    }
+    return this.transporter;
   }
 
   createTransporter() {
-    // Configure based on environment
-    if (process.env.NODE_ENV === "production") {
-      // Production: Use SendGrid, AWS SES, or Gmail
-      if (process.env.SENDGRID_API_KEY) {
-        return nodemailer.createTransport({
-          service: "sendgrid",
-          auth: {
-            user: "apikey",
-            pass: process.env.SENDGRID_API_KEY,
-          },
-        });
-      } else if (process.env.AWS_ACCESS_KEY_ID) {
-        return nodemailer.createTransport({
-          SES: {
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-            region: process.env.AWS_REGION,
-          },
-        });
-      } else {
-        // Fallback to Gmail
-        return nodemailer.createTransport({
-          service: "gmail",
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
-      }
-    } else {
-      // Development: Use configured service or Ethereal
-      if (process.env.SENDGRID_API_KEY) {
-        // Use SendGrid for development
-        return nodemailer.createTransport({
-          service: "sendgrid",
-          auth: {
-            user: "apikey",
-            pass: process.env.SENDGRID_API_KEY,
-          },
-        });
-      } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-        // Use Gmail for development
-        return nodemailer.createTransport({
-          service: "gmail",
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
-      } else if (process.env.ETHEREAL_USER && process.env.ETHEREAL_PASS) {
-        // Use Ethereal Email
-        return nodemailer.createTransport({
-          host: "smtp.ethereal.email",
-          port: 587,
-          auth: {
-            user: process.env.ETHEREAL_USER,
-            pass: process.env.ETHEREAL_PASS,
-          },
-        });
-      } else {
-        // Default Ethereal (current)
-        return nodemailer.createTransport({
-          host: "smtp.ethereal.email",
-          port: 587,
-          auth: {
-            user: "ethereal.user@ethereal.email",
-            pass: "ethereal.pass",
-          },
-        });
-      }
+    // Priority order: SendGrid -> Gmail -> Ethereal
+
+    // 1. Try SendGrid first (for production)
+    if (
+      process.env.SENDGRID_API_KEY &&
+      process.env.SENDGRID_API_KEY.startsWith("SG.")
+    ) {
+      console.log("📧 Using SendGrid for email service");
+      return nodemailer.createTransport({
+        service: "sendgrid",
+        auth: {
+          user: "apikey",
+          pass: process.env.SENDGRID_API_KEY,
+        },
+      });
     }
+
+    // 2. Try Gmail if SendGrid is not available
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      console.log("📧 Using Gmail for email service");
+      return nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+    }
+
+    // 3. Fallback to Ethereal (for testing)
+    console.log("📧 Using Ethereal for email service (testing mode)");
+    return nodemailer.createTransport({
+      host: "smtp.ethereal.email",
+      port: 587,
+      secure: false,
+      auth: {
+        user: "ghfljoi26msxa6fo@ethereal.email",
+        pass: "npDRM59thMhuFyaNeS",
+      },
+    });
   }
 
   async sendEmail(options) {
     try {
       const mailOptions = {
-        from: process.env.EMAIL_FROM || "LegitEvents <noreply@legitevents.com>",
+        from:
+          process.env.EMAIL_FROM ||
+          process.env.EMAIL_USER ||
+          "LegitEvents <noreply@legitevents.com>",
         to: options.to,
         subject: options.subject,
         html: options.html,
@@ -91,7 +70,7 @@ class EmailService {
         attachments: options.attachments || [],
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await this.getTransporter().sendMail(mailOptions);
 
       if (process.env.NODE_ENV === "development") {
         console.log("✅ Email sent successfully");
