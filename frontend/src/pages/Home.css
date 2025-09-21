@@ -92,11 +92,11 @@
 .hero-content p {
   font-size: var(--font-size-xl);
   margin-bottom: var(--spacing-2xl);
-  opacity: 0.98;
   line-height: 1.6;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.98);
+  color: rgba(255, 255, 255, 1);
   backdrop-filter: blur(1px);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .hero-actions {
@@ -301,7 +301,7 @@
 .cta-section p {
   font-size: var(--font-size-lg);
   margin-bottom: var(--spacing-2xl);
-  opacity: 0.9;
+  color: var(--white);
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;

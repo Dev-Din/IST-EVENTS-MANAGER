@@ -20,10 +20,13 @@
   "author": "LegitEvents™ Team",
   "license": "MIT",
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
+    "axios": "^1.12.2",
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "express-rate-limit": "^6.7.0",
@@ -41,6 +44,7 @@
   },
   "devDependencies": {
     "@types/node": "^18.15.11",
+    "ethereal-email": "^1.0.0",
     "jest": "^29.5.0",
     "nodemon": "^2.0.22",
     "supertest": "^6.3.3"

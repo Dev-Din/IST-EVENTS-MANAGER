@@ -38,116 +38,199 @@ class PDFTicketGenerator {
         });
 
         const qrCodeBuffer = await QRCode.toBuffer(qrCodeData, {
-          errorCorrectionLevel: "M",
+          errorCorrectionLevel: "H", // Higher error correction
           type: "png",
-          quality: 0.92,
-          margin: 1,
+          quality: 0.95,
+          margin: 2,
           color: {
             dark: "#000000",
             light: "#FFFFFF",
           },
         });
 
-        // Header with logo area
+        // Header Section - Clean and Professional
+        const headerY = this.margin;
+
+        // Logo and Title
         doc
-          .fontSize(24)
-          .fillColor("#2563eb")
-          .text("🎫 LegitEvents", this.margin, this.margin, {
+          .fontSize(28)
+          .fillColor("#007bff")
+          .text("LegitEvents", this.margin, headerY, {
             align: "center",
           });
 
         doc
           .fontSize(12)
-          .fillColor("#666")
-          .text("East Africa's Premier Event Management Platform", {
-            align: "center",
-          });
-
-        // Ticket title
-        doc
-          .fontSize(20)
-          .fillColor("#000")
-          .text("EVENT TICKET", this.margin, this.margin + 80, {
-            align: "center",
-          });
-
-        // Main ticket content area
-        const contentY = this.margin + 120;
-
-        // Event details box
-        doc
-          .rect(this.margin, contentY, this.pageWidth - 2 * this.margin, 200)
-          .stroke("#e5e7eb");
-
-        // Event information
-        let currentY = contentY + 20;
-
-        doc
-          .fontSize(18)
-          .fillColor("#1f2937")
-          .text(event.title, this.margin + 20, currentY, { width: 300 });
-
-        currentY += 40;
-
-        doc.fontSize(12).fillColor("#374151");
-
-        // Event details
-        const eventDate = new Date(event.date);
-        const eventDetails = [
-          { label: "📅 Date & Time:", value: eventDate.toLocaleString() },
-          { label: "📍 Location:", value: event.location },
-          { label: "🎫 Ticket Number:", value: ticket.ticketNumber },
-          { label: "👤 Attendee:", value: user.fullName || user.username },
-          { label: "📧 Email:", value: user.email },
-          { label: "🎟️ Quantity:", value: ticket.quantity.toString() },
-          {
-            label: "💰 Total Paid:",
-            value: `${event.currency} ${ticket.totalPrice.toLocaleString()}`,
-          },
-        ];
-
-        eventDetails.forEach((detail) => {
-          doc
-            .text(detail.label, this.margin + 20, currentY, {
-              width: 120,
-              continued: true,
-            })
-            .text(detail.value, { width: 300 });
-          currentY += 25;
-        });
-
-        // QR Code
-        doc.image(
-          qrCodeBuffer,
-          this.pageWidth - this.margin - 120,
-          contentY + 20,
-          {
-            width: 100,
-            height: 100,
-          }
-        );
-
-        doc
-          .fontSize(10)
-          .fillColor("#6b7280")
+          .fillColor("#6c757d")
           .text(
-            "Scan for verification",
-            this.pageWidth - this.margin - 120,
-            contentY + 130,
+            "East Africa's Premier Event Management Platform",
+            this.margin,
+            headerY + 35,
             {
-              width: 100,
               align: "center",
             }
           );
 
-        // Terms and conditions
-        currentY = contentY + 240;
+        // Main Ticket Title
+        doc
+          .fontSize(24)
+          .fillColor("#000000")
+          .text("EVENT TICKET", this.margin, headerY + 60, {
+            align: "center",
+          });
+
+        // Main Content Area - Better Layout
+        const contentStartY = headerY + 120;
+        const contentWidth = this.pageWidth - 2 * this.margin;
+        const contentHeight = 400;
+
+        // Draw main ticket border
+        doc
+          .rect(this.margin, contentStartY, contentWidth, contentHeight)
+          .stroke("#007bff")
+          .lineWidth(2);
+
+        // Event Title Section
+        const eventTitleY = contentStartY + 20;
+        doc
+          .fontSize(20)
+          .fillColor("#000000")
+          .text(event.title, this.margin + 20, eventTitleY, {
+            width: contentWidth - 40,
+            align: "center",
+          });
+
+        // Event Details Grid Layout
+        const detailsStartY = eventTitleY + 50;
+        const leftColumnX = this.margin + 20;
+        const rightColumnX = this.margin + contentWidth / 2;
+        const detailSpacing = 25;
+
+        doc.fontSize(12).fillColor("#495057");
+
+        // Left Column Details
+        const eventDate = new Date(event.date);
+        let currentY = detailsStartY;
+
+        // Date & Time
+        doc
+          .fontSize(11)
+          .fillColor("#6c757d")
+          .text("DATE & TIME:", leftColumnX, currentY);
+        doc
+          .fontSize(12)
+          .fillColor("#000000")
+          .text(eventDate.toLocaleString(), leftColumnX, currentY + 15);
+        currentY += 40;
+
+        // Location
+        doc
+          .fontSize(11)
+          .fillColor("#6c757d")
+          .text("LOCATION:", leftColumnX, currentY);
+        doc
+          .fontSize(12)
+          .fillColor("#000000")
+          .text(event.location, leftColumnX, currentY + 15, { width: 200 });
+        currentY += 40;
+
+        // Attendee
+        doc
+          .fontSize(11)
+          .fillColor("#6c757d")
+          .text("ATTENDEE:", leftColumnX, currentY);
+        doc
+          .fontSize(12)
+          .fillColor("#000000")
+          .text(user.fullName || user.username, leftColumnX, currentY + 15);
+        currentY += 40;
+
+        // Email
+        doc
+          .fontSize(11)
+          .fillColor("#6c757d")
+          .text("EMAIL:", leftColumnX, currentY);
+        doc
+          .fontSize(12)
+          .fillColor("#000000")
+          .text(user.email, leftColumnX, currentY + 15, { width: 200 });
+
+        // Right Column Details
+        currentY = detailsStartY;
+
+        // Ticket Number
+        doc
+          .fontSize(11)
+          .fillColor("#6c757d")
+          .text("TICKET NUMBER:", rightColumnX, currentY);
+        doc
+          .fontSize(12)
+          .fillColor("#000000")
+          .text(ticket.ticketNumber, rightColumnX, currentY + 15);
+        currentY += 40;
+
+        // Quantity
+        doc
+          .fontSize(11)
+          .fillColor("#6c757d")
+          .text("QUANTITY:", rightColumnX, currentY);
+        doc
+          .fontSize(12)
+          .fillColor("#000000")
+          .text(
+            `${ticket.quantity} ticket${ticket.quantity > 1 ? "s" : ""}`,
+            rightColumnX,
+            currentY + 15
+          );
+        currentY += 40;
+
+        // Total Paid
+        doc
+          .fontSize(11)
+          .fillColor("#6c757d")
+          .text("TOTAL PAID:", rightColumnX, currentY);
+        doc
+          .fontSize(14)
+          .fillColor("#28a745")
+          .text(
+            `${event.currency} ${ticket.totalPrice.toLocaleString()}`,
+            rightColumnX,
+            currentY + 15
+          );
+
+        // QR Code Section - Better Positioned
+        const qrCodeX = this.margin + contentWidth - 140;
+        const qrCodeY = detailsStartY + 20;
+
+        // QR Code Background
+        doc
+          .rect(qrCodeX - 10, qrCodeY - 10, 130, 130)
+          .fill("#f8f9fa")
+          .stroke("#dee2e6");
+
+        // QR Code Image
+        doc.image(qrCodeBuffer, qrCodeX, qrCodeY, {
+          width: 110,
+          height: 110,
+        });
+
+        // QR Code Label
         doc
           .fontSize(10)
-          .fillColor("#6b7280")
-          .text("Terms & Conditions:", this.margin, currentY);
+          .fillColor("#6c757d")
+          .text("Scan for verification", qrCodeX, qrCodeY + 115, {
+            width: 110,
+            align: "center",
+          });
 
-        currentY += 15;
+        // Terms and Conditions Section
+        const termsY = contentStartY + contentHeight + 20;
+        doc
+          .fontSize(12)
+          .fillColor("#495057")
+          .text("Terms & Conditions:", this.margin, termsY);
+
+        const termsStartY = termsY + 20;
         const terms = [
           "• This ticket is valid only for the specified event and date",
           "• Please arrive 30 minutes before the event starts",
@@ -157,37 +240,53 @@ class PDFTicketGenerator {
           "• By attending, you consent to photography and filming",
         ];
 
+        let termsYPos = termsStartY;
         terms.forEach((term) => {
-          doc.text(term, this.margin, currentY, {
-            width: this.pageWidth - 2 * this.margin,
-          });
-          currentY += 12;
+          doc
+            .fontSize(10)
+            .fillColor("#6c757d")
+            .text(term, this.margin, termsYPos, {
+              width: contentWidth,
+            });
+          termsYPos += 15;
         });
 
-        // Footer
-        const footerY = this.pageHeight - this.margin - 40;
+        // Footer Section
+        const footerY = this.pageHeight - this.margin - 60;
+
+        // Footer background
         doc
-          .rect(this.margin, footerY - 10, this.pageWidth - 2 * this.margin, 50)
-          .fill("#f3f4f6");
+          .rect(this.margin, footerY, contentWidth, 50)
+          .fill("#f8f9fa")
+          .stroke("#dee2e6");
+
+        // Footer content
+        doc
+          .fontSize(10)
+          .fillColor("#6c757d")
+          .text(
+            `Generated on: ${new Date().toLocaleString()}`,
+            this.margin + 15,
+            footerY + 15
+          );
 
         doc
           .fontSize(10)
-          .fillColor("#374151")
+          .fillColor("#6c757d")
           .text(
-            `Generated on: ${new Date().toLocaleString()}`,
-            this.margin + 10,
-            footerY
+            "For support: support@legitevents.com",
+            this.margin + contentWidth - 200,
+            footerY + 15,
+            { align: "right" }
           );
 
-        doc.text("For support: support@legitevents.com", { align: "right" });
-
-        // Watermark
+        // Subtle watermark - moved to background
         doc
-          .fontSize(60)
-          .fillColor("#f3f4f6")
-          .text("LEGITEVENTS", this.margin, this.pageHeight / 2 - 30, {
+          .fontSize(48)
+          .fillColor("#f8f9fa")
+          .text("LEGITEVENTS", this.margin, this.pageHeight / 2 - 24, {
             align: "center",
-            width: this.pageWidth - 2 * this.margin,
+            width: contentWidth,
           });
 
         doc.end();

@@ -79,49 +79,41 @@ const login = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Please provide an email and password", 400));
   }
 
-  // Check for user
-  const user = await User.findOne({ email: email.toLowerCase() }).select(
-    "+password"
-  );
+  try {
+    // Use User.authenticate method which handles lastLogin update
+    const user = await User.authenticate(email, password);
 
-  if (!user) {
-    return next(new ErrorResponse("Invalid credentials", 401));
+    // Generate JWT token
+    const token = user.getSignedJwtToken();
+
+    // Set token as cookie
+    const options = {
+      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // Allow cross-origin in dev
+    };
+
+    res.cookie("token", token, options);
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        country: user.country,
+        currency: user.currency,
+        lastLogin: user.lastLogin,
+      },
+    });
+  } catch (error) {
+    return next(new ErrorResponse(error.message, 401));
   }
-
-  // Check if password matches
-  const isMatch = await user.comparePassword(password);
-
-  if (!isMatch) {
-    return next(new ErrorResponse("Invalid credentials", 401));
-  }
-
-  // Generate JWT token
-  const token = user.getSignedJwtToken();
-
-  // Set token as cookie
-  const options = {
-    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // Allow cross-origin in dev
-  };
-
-  res.cookie("token", token, options);
-
-  res.json({
-    success: true,
-    message: "Login successful",
-    token,
-    user: {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role,
-      country: user.country,
-      currency: user.currency,
-    },
-  });
 });
 
 // @desc    Get current logged in user
@@ -380,6 +372,9 @@ const verifyTempCredentials = asyncHandler(async (req, res, next) => {
   if (!isMatch) {
     return next(new ErrorResponse("Invalid credentials", 401));
   }
+
+  // Update last login
+  await user.updateLastLogin();
 
   // Generate JWT token
   const token = user.getSignedJwtToken();

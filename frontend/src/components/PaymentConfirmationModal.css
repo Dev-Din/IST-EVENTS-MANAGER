@@ -242,9 +242,24 @@
 
 .mpesa-form .form-hint {
   display: block;
-  margin-top: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
   color: var(--gray-600);
   font-size: var(--font-size-sm);
+  line-height: 1.4;
+  background: var(--gray-50);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  border-left: 3px solid var(--primary-color);
+}
+
+.mpesa-form .form-hint i {
+  color: var(--primary-color);
+  margin-right: var(--spacing-xs);
+}
+
+.mpesa-form .form-hint strong {
+  color: var(--gray-800);
+  font-weight: 600;
 }
 
 .mpesa-info {

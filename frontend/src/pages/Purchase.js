@@ -5,6 +5,7 @@ import Loading from "../components/Loading";
 import PaymentConfirmationModal from "../components/PaymentConfirmationModal";
 import TicketDownload from "../components/TicketDownload";
 import { eventsAPI, ticketsAPI } from "../services/api";
+import axios from "axios";
 import "./Purchase.css";
 
 const Purchase = () => {
@@ -21,6 +22,8 @@ const Purchase = () => {
   const [purchasedQuantity, setPurchasedQuantity] = useState(1);
   const [purchasedTicket, setPurchasedTicket] = useState(null);
   const [showTicketDownload, setShowTicketDownload] = useState(false);
+  const [mpesaPayment, setMpesaPayment] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState(""); // pending, success, failed
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -65,6 +68,108 @@ const Purchase = () => {
 
   const handleInitiatePurchase = () => {
     setShowPaymentModal(true);
+  };
+
+  const handleMpesaPayment = async (phoneNumber) => {
+    if (!phoneNumber || !phoneNumber.trim()) {
+      setError("Please enter your phone number");
+      return;
+    }
+
+    try {
+      setPurchasing(true);
+      setError("");
+      setPaymentStatus("pending");
+
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${
+          process.env.REACT_APP_API_URL || "http://localhost:5000/api"
+        }/payments/mpesa/initiate`,
+        {
+          eventId: eventId,
+          quantity: quantity,
+          phoneNumber: phoneNumber,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setMpesaPayment(response.data.data);
+      setShowPaymentModal(false);
+
+      // Start polling for payment status
+      pollPaymentStatus(response.data.data.checkoutRequestID);
+    } catch (error) {
+      console.error("Error initiating M-Pesa payment:", error);
+      setError(
+        error.response?.data?.message ||
+          "Failed to initiate M-Pesa payment. Please try again."
+      );
+      setPaymentStatus("failed");
+    } finally {
+      setPurchasing(false);
+    }
+  };
+
+  const pollPaymentStatus = async (checkoutRequestID) => {
+    const maxAttempts = 30; // Poll for 5 minutes (30 * 10 seconds)
+    let attempts = 0;
+
+    const poll = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+          `${
+            process.env.REACT_APP_API_URL || "http://localhost:5000/api"
+          }/payments/mpesa/status/${checkoutRequestID}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const { resultCode, ticket } = response.data.data;
+
+        if (resultCode === 0) {
+          // Payment successful
+          setPaymentStatus("success");
+          setPurchasedQuantity(quantity);
+          setPurchasedTicket(ticket);
+          setSuccess(true);
+          return;
+        } else if (resultCode === 1032) {
+          // User cancelled
+          setPaymentStatus("failed");
+          setError("Payment was cancelled. Please try again.");
+          return;
+        } else if (attempts >= maxAttempts) {
+          // Timeout
+          setPaymentStatus("failed");
+          setError("Payment timeout. Please check your phone or try again.");
+          return;
+        }
+
+        attempts++;
+        setTimeout(poll, 10000); // Poll every 10 seconds
+      } catch (error) {
+        console.error("Error polling payment status:", error);
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 10000);
+        } else {
+          setPaymentStatus("failed");
+          setError("Failed to check payment status. Please contact support.");
+        }
+      }
+    };
+
+    poll();
   };
 
   const handleConfirmPayment = async (paymentDetails) => {
@@ -270,6 +375,45 @@ const Purchase = () => {
               </div>
             )}
 
+            {paymentStatus === "pending" && (
+              <div className="alert alert-info">
+                <i className="fas fa-spinner fa-spin"></i>
+                <div>
+                  <strong>M-Pesa Payment Initiated!</strong>
+                  <p>
+                    Please check your phone and complete the payment. We're
+                    waiting for confirmation...
+                  </p>
+                  {mpesaPayment && (
+                    <div className="payment-details">
+                      <p>
+                        <strong>Amount:</strong> KES {mpesaPayment.amount}
+                      </p>
+                      <p>
+                        <strong>Phone:</strong> {mpesaPayment.phoneNumber}
+                      </p>
+                      <p>
+                        <strong>Reference:</strong>{" "}
+                        {mpesaPayment.checkoutRequestID}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {paymentStatus === "failed" && (
+              <div className="alert alert-error">
+                <i className="fas fa-times-circle"></i>
+                <div>
+                  <strong>Payment Failed</strong>
+                  <p>
+                    Please try again or contact support if the issue persists.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="buyer-info">
               <h3>Buyer Information</h3>
               <div className="info-grid">
@@ -412,6 +556,7 @@ const Purchase = () => {
           event={event}
           quantity={quantity}
           onConfirmPayment={handleConfirmPayment}
+          onMpesaPayment={handleMpesaPayment}
           loading={purchasing}
         />
       )}

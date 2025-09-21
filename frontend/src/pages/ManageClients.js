@@ -11,6 +11,7 @@ const ManageClients = () => {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -57,6 +58,29 @@ const ManageClients = () => {
   const handleSendEmail = (client) => {
     // In a real app, this would open an email composer or send via API
     window.open(`mailto:${client.email}`, "_blank");
+  };
+
+  const handleDeleteClient = async (clientId) => {
+    try {
+      await adminAPI.deleteClient(clientId);
+      setClients(clients.filter((client) => client._id !== clientId));
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      alert("Failed to delete client. Please try again.");
+    }
+  };
+
+  const confirmDelete = (client) => {
+    setDeleteConfirm({
+      id: client._id,
+      name: client.fullName || client.username,
+      email: client.email,
+    });
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirm(null);
   };
 
   const formatDate = (dateString) => {
@@ -281,6 +305,12 @@ const ManageClients = () => {
                           <i className="fas fa-money-bill-wave"></i>
                           {formatCurrency(client.stats?.totalSpent || 0)}
                         </div>
+                        {client.stats?.lastTicketEvent && (
+                          <div className="activity-stat last-event">
+                            <i className="fas fa-calendar"></i>
+                            Last: {client.stats.lastTicketEvent}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td>
@@ -321,6 +351,13 @@ const ManageClients = () => {
                             }`}
                           ></i>
                         </button>
+                        <button
+                          onClick={() => confirmDelete(client)}
+                          className="btn btn-sm btn-danger"
+                          title="Delete Client"
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -330,6 +367,51 @@ const ManageClients = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h3>Delete Client</h3>
+              <button onClick={cancelDelete} className="close-btn">
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="warning-icon">
+                <i className="fas fa-exclamation-triangle"></i>
+              </div>
+              <p>
+                Are you sure you want to delete this client? This action cannot
+                be undone.
+              </p>
+              <div className="client-info">
+                <strong>{deleteConfirm.name}</strong>
+                <br />
+                <span className="text-muted">{deleteConfirm.email}</span>
+              </div>
+              <div className="warning-text">
+                <i className="fas fa-info-circle"></i>
+                This will permanently remove the client account and all
+                associated data.
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={cancelDelete} className="btn btn-outline">
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteClient(deleteConfirm.id)}
+                className="btn btn-danger"
+              >
+                <i className="fas fa-trash"></i>
+                Delete Client
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

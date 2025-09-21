@@ -136,17 +136,70 @@ const toggleSubAdminStatus = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get all clients
+// @desc    Get all clients with real-time activity data
 // @route   GET /api/admin/clients
 // @access  Private/Admin
 const getClients = asyncHandler(async (req, res, next) => {
-  const clients = await User.getUsersByRole("client");
+  // Get all clients
+  const clients = await User.find({ role: "client", isActive: true }).select(
+    "-password"
+  );
+
+  // Get activity data for each client
+  const clientsWithActivity = await Promise.all(
+    clients.map(async (client) => {
+      // Get ticket statistics for this client
+      const ticketStats = await Ticket.aggregate([
+        {
+          $match: {
+            user: client._id,
+            status: "confirmed",
+            paymentStatus: "completed",
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalTickets: { $sum: "$quantity" },
+            totalSpent: { $sum: "$totalPrice" },
+            lastPurchase: { $max: "$purchaseDate" },
+          },
+        },
+      ]);
+
+      // Get the most recent ticket for additional details
+      const lastTicket = await Ticket.findOne({
+        user: client._id,
+        status: "confirmed",
+        paymentStatus: "completed",
+      })
+        .populate("event", "title currency")
+        .sort({ purchaseDate: -1 });
+
+      const stats = ticketStats[0] || {
+        totalTickets: 0,
+        totalSpent: 0,
+        lastPurchase: null,
+      };
+
+      return {
+        ...client.toObject(),
+        stats: {
+          totalTickets: stats.totalTickets,
+          totalSpent: stats.totalSpent,
+          lastPurchase: stats.lastPurchase,
+          lastTicketEvent: lastTicket ? lastTicket.event.title : null,
+          lastTicketCurrency: lastTicket ? lastTicket.event.currency : null,
+        },
+      };
+    })
+  );
 
   res.json({
     success: true,
-    count: clients.length,
-    clients: clients,
-    data: clients, // Keep both for backward compatibility
+    count: clientsWithActivity.length,
+    clients: clientsWithActivity,
+    data: clientsWithActivity, // Keep both for backward compatibility
   });
 });
 

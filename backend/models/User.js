@@ -236,10 +236,10 @@ UserSchema.methods.incLoginAttempts = function () {
 
 // Update last login
 UserSchema.methods.updateLastLogin = function () {
-  return this.updateOne({
-    lastLogin: new Date(),
-    $unset: { loginAttempts: 1, lockUntil: 1 },
-  });
+  this.lastLogin = new Date();
+  this.loginAttempts = 0;
+  this.lockUntil = undefined;
+  return this.save();
 };
 
 // Check if user has permission
@@ -297,8 +297,8 @@ UserSchema.statics.authenticate = async function (identifier, password) {
     throw new Error("Invalid credentials");
   }
 
-  await user.updateLastLogin();
-  return user;
+  const updatedUser = await user.updateLastLogin();
+  return updatedUser;
 };
 
 module.exports = mongoose.model("User", UserSchema);

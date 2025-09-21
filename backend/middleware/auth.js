@@ -325,8 +325,8 @@ const authRateLimit = (maxAttempts = 5, windowMs = 15 * 60 * 1000) => {
 };
 
 // Rate limiting for password reset attempts
-const passwordResetRateLimit = (maxAttempts = 3, windowMs = 60 * 60 * 1000) => {
-  // 3 attempts per hour
+const passwordResetRateLimit = (maxAttempts = 5, windowMs = 60 * 60 * 1000) => {
+  // 5 attempts per hour
   const attempts = new Map();
 
   return (req, res, next) => {

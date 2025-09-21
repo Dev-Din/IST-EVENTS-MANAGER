@@ -602,6 +602,28 @@
   border: 1px solid #fca5a5;
 }
 
+.alert-info {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.payment-details {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+}
+
+.payment-details p {
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.payment-details p:last-child {
+  margin-bottom: 0;
+}
+
 /* Quantity Section */
 .quantity-section {
   margin-bottom: var(--spacing-2xl);

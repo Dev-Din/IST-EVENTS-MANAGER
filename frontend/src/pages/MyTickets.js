@@ -56,29 +56,6 @@ const MyTickets = () => {
     return `TK-${ticket._id.slice(-8).toUpperCase()}`;
   };
 
-  const handlePrintTicket = (ticketId) => {
-    // Remove any existing print-target class
-    const existingTargets = document.querySelectorAll(".print-target");
-    existingTargets.forEach((el) => el.classList.remove("print-target"));
-
-    // Add print-target class to the specific ticket
-    const ticketElement = document.querySelector(
-      `[data-ticket-id="${ticketId}"]`
-    );
-    if (ticketElement) {
-      ticketElement.classList.add("print-target");
-
-      // Small delay to ensure class is applied before printing
-      setTimeout(() => {
-        window.print();
-        // Remove the class after printing
-        setTimeout(() => {
-          ticketElement.classList.remove("print-target");
-        }, 1000);
-      }, 100);
-    }
-  };
-
   const handleDownloadTicket = (ticket) => {
     setSelectedTicket(ticket);
     setShowTicketDownload(true);
@@ -262,14 +239,6 @@ const MyTickets = () => {
                     >
                       <i className="fas fa-download"></i>
                       Download Ticket
-                    </button>
-
-                    <button
-                      className="btn btn-outline"
-                      onClick={() => handlePrintTicket(ticket._id)}
-                    >
-                      <i className="fas fa-print"></i>
-                      Print Ticket
                     </button>
                   </div>
 

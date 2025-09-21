@@ -8,6 +8,7 @@ const PaymentConfirmationModal = ({
   event,
   quantity = 1,
   onConfirmPayment,
+  onMpesaPayment,
   loading = false,
 }) => {
   const [paymentMethod, setPaymentMethod] = useState("mpesa");
@@ -15,7 +16,7 @@ const PaymentConfirmationModal = ({
   const [expiryDate, setExpiryDate] = useState("12/25");
   const [cvv, setCvv] = useState("123");
   const [cardName, setCardName] = useState("Demo User");
-  const [phoneNumber, setPhoneNumber] = useState("+254712345678");
+  const [phoneNumber, setPhoneNumber] = useState("254712345678");
   const [formError, setFormError] = useState("");
 
   const formatPrice = (price, currency = "USD") => {
@@ -26,12 +27,13 @@ const PaymentConfirmationModal = ({
   };
 
   const calculateTotal = () => {
-    return event ? event.price * quantity : 0;
+    // For M-Pesa testing, always return KES 1 regardless of event price
+    return 1;
   };
 
   const calculateProcessingFee = () => {
-    // Fixed processing fee: 1.5 for all currencies
-    return 1.5;
+    // No processing fee for M-Pesa testing
+    return 0;
   };
 
   const calculateGrandTotal = () => {
@@ -44,16 +46,27 @@ const PaymentConfirmationModal = ({
     // Validate M-PESA phone number if M-PESA is selected
     if (paymentMethod === "mpesa") {
       const cleanPhone = phoneNumber.replace(/\s+/g, "");
-      if (!cleanPhone || cleanPhone.length < 10) {
-        setFormError("Please enter a valid M-PESA phone number");
+
+      // Validate 2547XXXXXXXX format (best practice for M-Pesa)
+      const mpesaPattern = /^2547\d{8}$/;
+
+      if (!cleanPhone) {
+        setFormError("Please enter your M-PESA phone number");
         return;
       }
-      if (!cleanPhone.startsWith("+254")) {
+
+      if (!mpesaPattern.test(cleanPhone)) {
         setFormError(
-          "Please enter a valid Kenyan phone number starting with +254"
+          "Please enter a valid M-PESA number in format: 2547XXXXXXXX (e.g., 254712345678)"
         );
         return;
       }
+
+      // Call M-Pesa payment function
+      if (onMpesaPayment) {
+        onMpesaPayment(phoneNumber);
+      }
+      return;
     }
 
     const paymentDetails = {
@@ -61,7 +74,7 @@ const PaymentConfirmationModal = ({
       transactionId: `TXN-${Date.now()}`,
       paymentProcessor:
         paymentMethod === "mpesa" ? "M-PESA" : "Demo Payment Gateway",
-      currency: event.currency || "USD",
+      currency: paymentMethod === "mpesa" ? "KES" : event.currency || "USD",
     };
 
     // Add method-specific details
@@ -95,26 +108,6 @@ const PaymentConfirmationModal = ({
       .substr(0, 5);
   };
 
-  const formatPhoneNumber = (value) => {
-    // Remove all non-digit characters except +
-    let cleaned = value.replace(/[^\d+]/g, "");
-
-    // Handle different input formats
-    if (cleaned.startsWith("0")) {
-      cleaned = "+254" + cleaned.substring(1);
-    } else if (cleaned.startsWith("254") && !cleaned.startsWith("+254")) {
-      cleaned = "+" + cleaned;
-    } else if (
-      !cleaned.startsWith("+254") &&
-      cleaned.length > 0 &&
-      !cleaned.startsWith("+")
-    ) {
-      cleaned = "+254" + cleaned;
-    }
-
-    return cleaned.substring(0, 13); // Limit to +254XXXXXXXXX format
-  };
-
   return (
     <Modal
       isOpen={isOpen}
@@ -133,7 +126,7 @@ const PaymentConfirmationModal = ({
           <div className="order-details">
             <div className="order-item">
               <div className="item-info">
-                <h4>{event?.name}</h4>
+                <h4>{event?.title}</h4>
                 <p>
                   <i className="fas fa-calendar"></i>
                   {new Date(event?.date).toLocaleDateString("en-US", {
@@ -336,15 +329,15 @@ const PaymentConfirmationModal = ({
                     type="tel"
                     value={phoneNumber}
                     onChange={(e) => {
-                      setPhoneNumber(formatPhoneNumber(e.target.value));
+                      setPhoneNumber(e.target.value);
                       setFormError(""); // Clear error when user types
                     }}
-                    placeholder="+254712345678"
-                    maxLength="13"
+                    placeholder="254712345678"
                     required
                   />
                   <small className="form-hint">
-                    Enter your M-PESA registered phone number
+                    Enter your M-PESA number in format: 2547XXXXXXXX (e.g.,
+                    254712345678)
                   </small>
                 </div>
                 <div className="mpesa-info">

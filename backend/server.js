@@ -22,6 +22,7 @@ const authRoutes = require("./routes/auth");
 const eventRoutes = require("./routes/events");
 const ticketRoutes = require("./routes/tickets");
 const adminRoutes = require("./routes/admin");
+const paymentRoutes = require("./routes/payments");
 
 // Connect to database
 connectDB();
@@ -137,6 +138,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Catch-all route for undefined endpoints
 app.all("*", (req, res) => {

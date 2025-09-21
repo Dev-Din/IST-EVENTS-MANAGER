@@ -39,11 +39,11 @@ async function testEmailConfiguration() {
   try {
     console.log("📧 Testing Email Service...");
 
-    const result = await emailService.sendNewCredentialsEmail({
-      email: "test@example.com",
-      tempPassword: "temp123456",
-      resetUrl: "http://localhost:3000/reset-password/token123",
-    });
+    const result = await emailService.sendNewCredentialsEmail(
+      { email: "test@example.com", fullName: "Test User" },
+      "temp123456",
+      "http://localhost:3000/reset-password/token123"
+    );
 
     console.log("✅ Email sent successfully!");
     console.log("📧 Message ID:", result.messageId);

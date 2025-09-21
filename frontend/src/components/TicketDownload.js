@@ -1,38 +1,43 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import QRCode from "qrcode";
 import "./TicketDownload.css";
 
 const TicketDownload = ({ ticket, onClose }) => {
   const canvasRef = useRef(null);
   const ticketRef = useRef(null);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
 
-  React.useEffect(() => {
-    if (ticket && canvasRef.current) {
+  useEffect(() => {
+    if (ticket) {
       // Generate QR code with ticket information
       const qrData = JSON.stringify({
         ticketNumber: ticket.ticketNumber,
         eventId: ticket.event._id,
         eventTitle: ticket.event.title,
-        attendee: ticket.user.fullName,
+        attendee: ticket.user.fullName || ticket.user.username,
         date: ticket.event.date,
         quantity: ticket.quantity,
       });
 
-      QRCode.toCanvas(
-        canvasRef.current,
-        qrData,
-        {
-          width: 150,
-          margin: 2,
-          color: {
-            dark: "#000000",
-            light: "#FFFFFF",
-          },
+      console.log("Generating QR code with data:", qrData);
+
+      // Generate QR code as data URL
+      QRCode.toDataURL(qrData, {
+        width: 150,
+        margin: 2,
+        color: {
+          dark: "#000000",
+          light: "#FFFFFF",
         },
-        (error) => {
-          if (error) console.error("QR Code generation error:", error);
-        }
-      );
+        errorCorrectionLevel: "M",
+      })
+        .then((dataUrl) => {
+          console.log("QR Code generated successfully as data URL");
+          setQrCodeDataUrl(dataUrl);
+        })
+        .catch((error) => {
+          console.error("QR Code generation error:", error);
+        });
     }
   }, [ticket]);
 
@@ -172,7 +177,11 @@ const TicketDownload = ({ ticket, onClose }) => {
               </div>
               <div class="qr-section">
                 <div class="qr-code">
-                  ${canvasRef.current ? canvasRef.current.outerHTML : ""}
+                  ${
+                    qrCodeDataUrl
+                      ? `<img src="${qrCodeDataUrl}" style="width: 150px; height: 150px;" />`
+                      : ""
+                  }
                 </div>
                 <p style="margin: 0; font-size: 12px; color: #6B7280;">
                   Scan this QR code at the event entrance
@@ -255,7 +264,14 @@ const TicketDownload = ({ ticket, onClose }) => {
               </div>
 
               <div className="qr-section">
-                <canvas ref={canvasRef} className="qr-code"></canvas>
+                {qrCodeDataUrl ? (
+                  <img src={qrCodeDataUrl} alt="QR Code" className="qr-code" />
+                ) : (
+                  <div className="qr-code qr-loading">
+                    <i className="fas fa-spinner fa-spin"></i>
+                    <span>Generating QR Code...</span>
+                  </div>
+                )}
                 <p className="qr-instruction">
                   Scan this QR code at the event entrance
                 </p>
