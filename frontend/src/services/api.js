@@ -115,4 +115,17 @@ export const adminAPI = {
   getDashboardStats: () => api.get("/admin/dashboard"),
 };
 
+export const paymentsAPI = {
+  getTransactionLogs: () => api.get("/payments/logs"),
+  getTransactionSummary: () => api.get("/payments/logs/summary"),
+  exportPDF: () =>
+    api.get("/payments/logs/export/pdf", {
+      responseType: "blob",
+    }),
+  exportCSV: () =>
+    api.get("/payments/logs/export/csv", {
+      responseType: "blob",
+    }),
+};
+
 export default api;

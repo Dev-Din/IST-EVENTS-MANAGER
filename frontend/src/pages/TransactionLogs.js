@@ -1,24 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import api from "../services/api";
-import {
-  formatTimestamp,
-  formatDate,
-  formatTime,
-} from "../utils/dateFormatter";
+import { paymentsAPI } from "../services/api";
+import { formatDate, formatTime } from "../utils/dateFormatter";
 import "./TransactionLogs.css";
 
 const TransactionLogs = () => {
-  const [logs, setLogs] = useState(null);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("summary");
+  const [downloading, setDownloading] = useState(false);
 
   // Filter states
   const [filters, setFilters] = useState({
     type: "",
     status: "",
     phoneNumber: "",
+    dateRange: "",
   });
 
   // Dropdown states
@@ -26,6 +22,7 @@ const TransactionLogs = () => {
     type: false,
     status: false,
     phoneNumber: false,
+    dateRange: false,
   });
 
   // Search states
@@ -33,25 +30,19 @@ const TransactionLogs = () => {
     type: "",
     status: "",
     phoneNumber: "",
+    dateRange: "",
   });
 
-  const fetchLogs = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get("/payments/logs");
-      setLogs(response.data.data);
-    } catch (error) {
-      console.error("Error fetching logs:", error);
-      toast.error("Failed to fetch transaction logs");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Custom date range states
+  const [customDateRange, setCustomDateRange] = useState({
+    startDate: "",
+    endDate: "",
+  });
 
   const fetchSummary = async () => {
     setLoading(true);
     try {
-      const response = await api.get("/payments/logs/summary");
+      const response = await paymentsAPI.getTransactionSummary();
       setSummary(response.data.data);
     } catch (error) {
       console.error("Error fetching summary:", error);
@@ -62,12 +53,8 @@ const TransactionLogs = () => {
   };
 
   useEffect(() => {
-    if (activeTab === "summary") {
-      fetchSummary();
-    } else {
-      fetchLogs();
-    }
-  }, [activeTab]);
+    fetchSummary();
+  }, []);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -159,12 +146,33 @@ const TransactionLogs = () => {
       type: "",
       status: "",
       phoneNumber: "",
+      dateRange: "",
     });
     setSearchTerms({
       type: "",
       status: "",
       phoneNumber: "",
+      dateRange: "",
     });
+    setCustomDateRange({
+      startDate: "",
+      endDate: "",
+    });
+  };
+
+  const handleCustomDateChange = (field, value) => {
+    setCustomDateRange((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
+    // Auto-apply custom filter when both dates are selected
+    if (field === "endDate" && value && customDateRange.startDate) {
+      setFilters((prev) => ({
+        ...prev,
+        dateRange: "custom",
+      }));
+    }
   };
 
   // Filter data based on search terms
@@ -185,26 +193,126 @@ const TransactionLogs = () => {
       const phoneMatch =
         !filters.phoneNumber || txn.data.phoneNumber === filters.phoneNumber;
 
-      return typeMatch && statusMatch && phoneMatch;
+      // Date filtering
+      let dateMatch = true;
+      if (filters.dateRange) {
+        const transactionDate = new Date(txn.timestamp);
+        const today = new Date();
+
+        switch (filters.dateRange) {
+          case "today":
+            dateMatch = transactionDate.toDateString() === today.toDateString();
+            break;
+          case "yesterday":
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            dateMatch =
+              transactionDate.toDateString() === yesterday.toDateString();
+            break;
+          case "last7days":
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            dateMatch = transactionDate >= weekAgo;
+            break;
+          case "last30days":
+            const monthAgo = new Date(today);
+            monthAgo.setDate(monthAgo.getDate() - 30);
+            dateMatch = transactionDate >= monthAgo;
+            break;
+          case "custom":
+            if (customDateRange.startDate && customDateRange.endDate) {
+              const startDate = new Date(customDateRange.startDate);
+              const endDate = new Date(customDateRange.endDate);
+              // Set end date to end of day
+              endDate.setHours(23, 59, 59, 999);
+              dateMatch =
+                transactionDate >= startDate && transactionDate <= endDate;
+            } else {
+              dateMatch = true;
+            }
+            break;
+          default:
+            dateMatch = true;
+        }
+      }
+
+      return typeMatch && statusMatch && phoneMatch && dateMatch;
     });
+  };
+
+  // Download functions
+  const handleDownloadPDF = async () => {
+    try {
+      setDownloading(true);
+      const response = await paymentsAPI.exportPDF();
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `legitevents-transactions-${
+        new Date().toISOString().split("T")[0]
+      }.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("PDF downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      toast.error("Failed to download PDF");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleDownloadCSV = async () => {
+    try {
+      setDownloading(true);
+      const response = await paymentsAPI.exportCSV();
+
+      const blob = new Blob([response.data], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `legitevents-transactions-${
+        new Date().toISOString().split("T")[0]
+      }.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("CSV downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading CSV:", error);
+      toast.error("Failed to download CSV");
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
     <div className="transaction-logs">
       <div className="logs-header">
         <h1>M-Pesa Transaction Logs</h1>
-        <div className="logs-tabs">
+        <div className="download-buttons">
           <button
-            className={activeTab === "summary" ? "active" : ""}
-            onClick={() => setActiveTab("summary")}
+            className="download-btn pdf-btn"
+            onClick={handleDownloadPDF}
+            disabled={downloading}
           >
-            Summary
+            <i className="fas fa-file-pdf"></i>
+            {downloading ? "Generating..." : "Download PDF"}
           </button>
           <button
-            className={activeTab === "logs" ? "active" : ""}
-            onClick={() => setActiveTab("logs")}
+            className="download-btn csv-btn"
+            onClick={handleDownloadCSV}
+            disabled={downloading}
           >
-            All Logs
+            <i className="fas fa-file-csv"></i>
+            {downloading ? "Generating..." : "Download CSV"}
           </button>
         </div>
       </div>
@@ -216,7 +324,7 @@ const TransactionLogs = () => {
         </div>
       )}
 
-      {activeTab === "summary" && summary && (
+      {summary && (
         <div className="summary-section">
           {/* Filter Controls */}
           <div className="filter-controls">
@@ -228,6 +336,205 @@ const TransactionLogs = () => {
             </div>
 
             <div className="filter-dropdowns">
+              {/* By Date Filter - MOVED TO FIRST */}
+              <div className="filter-dropdown">
+                <label>By Date</label>
+                <div className="dropdown-container">
+                  <button
+                    className={`dropdown-toggle ${
+                      filters.dateRange ? "has-filter" : ""
+                    }`}
+                    onClick={() => toggleDropdown("dateRange")}
+                  >
+                    <span>
+                      {filters.dateRange === "custom" &&
+                      customDateRange.startDate &&
+                      customDateRange.endDate
+                        ? `${formatDate(
+                            customDateRange.startDate
+                          )} - ${formatDate(customDateRange.endDate)}`
+                        : filters.dateRange || "All Dates"}
+                    </span>
+                    <i
+                      className={`fas fa-chevron-${
+                        dropdowns.dateRange ? "up" : "down"
+                      }`}
+                    ></i>
+                  </button>
+
+                  {dropdowns.dateRange && (
+                    <div className="dropdown-menu">
+                      <div className="dropdown-options">
+                        <div
+                          className={`dropdown-option ${
+                            !filters.dateRange ? "selected" : ""
+                          }`}
+                          onClick={() => handleFilterSelect("dateRange", "")}
+                        >
+                          <span>All Dates</span>
+                          <span className="count">
+                            {summary.totalTransactions}
+                          </span>
+                        </div>
+                        <div
+                          className={`dropdown-option ${
+                            filters.dateRange === "today" ? "selected" : ""
+                          }`}
+                          onClick={() =>
+                            handleFilterSelect("dateRange", "today")
+                          }
+                        >
+                          <span>Today</span>
+                          <span className="count">
+                            {
+                              summary.recentTransactions.filter((txn) => {
+                                const transactionDate = new Date(txn.timestamp);
+                                const today = new Date();
+                                return (
+                                  transactionDate.toDateString() ===
+                                  today.toDateString()
+                                );
+                              }).length
+                            }
+                          </span>
+                        </div>
+                        <div
+                          className={`dropdown-option ${
+                            filters.dateRange === "yesterday" ? "selected" : ""
+                          }`}
+                          onClick={() =>
+                            handleFilterSelect("dateRange", "yesterday")
+                          }
+                        >
+                          <span>Yesterday</span>
+                          <span className="count">
+                            {
+                              summary.recentTransactions.filter((txn) => {
+                                const transactionDate = new Date(txn.timestamp);
+                                const yesterday = new Date();
+                                yesterday.setDate(yesterday.getDate() - 1);
+                                return (
+                                  transactionDate.toDateString() ===
+                                  yesterday.toDateString()
+                                );
+                              }).length
+                            }
+                          </span>
+                        </div>
+                        <div
+                          className={`dropdown-option ${
+                            filters.dateRange === "last7days" ? "selected" : ""
+                          }`}
+                          onClick={() =>
+                            handleFilterSelect("dateRange", "last7days")
+                          }
+                        >
+                          <span>Last 7 Days</span>
+                          <span className="count">
+                            {
+                              summary.recentTransactions.filter((txn) => {
+                                const transactionDate = new Date(txn.timestamp);
+                                const weekAgo = new Date();
+                                weekAgo.setDate(weekAgo.getDate() - 7);
+                                return transactionDate >= weekAgo;
+                              }).length
+                            }
+                          </span>
+                        </div>
+                        <div
+                          className={`dropdown-option ${
+                            filters.dateRange === "last30days" ? "selected" : ""
+                          }`}
+                          onClick={() =>
+                            handleFilterSelect("dateRange", "last30days")
+                          }
+                        >
+                          <span>Last 30 Days</span>
+                          <span className="count">
+                            {
+                              summary.recentTransactions.filter((txn) => {
+                                const transactionDate = new Date(txn.timestamp);
+                                const monthAgo = new Date();
+                                monthAgo.setDate(monthAgo.getDate() - 30);
+                                return transactionDate >= monthAgo;
+                              }).length
+                            }
+                          </span>
+                        </div>
+                        <div
+                          className={`dropdown-option ${
+                            filters.dateRange === "custom" ? "selected" : ""
+                          }`}
+                          onClick={() =>
+                            handleFilterSelect("dateRange", "custom")
+                          }
+                        >
+                          <span>Custom Dates</span>
+                          <span className="count">
+                            {customDateRange.startDate &&
+                            customDateRange.endDate
+                              ? summary.recentTransactions.filter((txn) => {
+                                  const transactionDate = new Date(
+                                    txn.timestamp
+                                  );
+                                  const startDate = new Date(
+                                    customDateRange.startDate
+                                  );
+                                  const endDate = new Date(
+                                    customDateRange.endDate
+                                  );
+                                  endDate.setHours(23, 59, 59, 999);
+                                  return (
+                                    transactionDate >= startDate &&
+                                    transactionDate <= endDate
+                                  );
+                                }).length
+                              : "Select dates"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Custom Date Range Picker */}
+                      {filters.dateRange === "custom" && (
+                        <div className="custom-date-range">
+                          <div className="date-inputs">
+                            <div className="date-input-group">
+                              <label>From:</label>
+                              <input
+                                type="date"
+                                value={customDateRange.startDate}
+                                onChange={(e) =>
+                                  handleCustomDateChange(
+                                    "startDate",
+                                    e.target.value
+                                  )
+                                }
+                                max={new Date().toISOString().split("T")[0]}
+                              />
+                            </div>
+                            <div className="date-input-group">
+                              <label>To:</label>
+                              <input
+                                type="date"
+                                value={customDateRange.endDate}
+                                onChange={(e) =>
+                                  handleCustomDateChange(
+                                    "endDate",
+                                    e.target.value
+                                  )
+                                }
+                                min={customDateRange.startDate || undefined}
+                                max={new Date().toISOString().split("T")[0]}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* By Type Filter */}
               <div className="filter-dropdown">
                 <label>By Type</label>
@@ -509,98 +816,6 @@ const TransactionLogs = () => {
               </p>
             )}
           </div>
-        </div>
-      )}
-
-      {activeTab === "logs" && logs && (
-        <div className="logs-section">
-          <div className="logs-meta">
-            <p>
-              Total Transactions:{" "}
-              <strong>{logs.metadata.totalTransactions}</strong>
-            </p>
-            <p>
-              Filtered Results:{" "}
-              <strong>
-                {getFilteredTransactions(logs.transactions).length}
-              </strong>
-            </p>
-            <p>
-              Last Updated:{" "}
-              <strong>{formatTimestamp(logs.metadata.lastUpdated)}</strong>
-            </p>
-          </div>
-
-          {getFilteredTransactions(logs.transactions).length > 0 ? (
-            <div className="transactions-list">
-              {getFilteredTransactions(logs.transactions).map((txn) => (
-                <div key={txn.id} className="transaction-item">
-                  <div className="transaction-header">
-                    <div className="transaction-id">
-                      <span className="id-label">ID:</span>
-                      <span className="id-value">{txn.id}</span>
-                    </div>
-                    <div className="transaction-time">
-                      {formatTimestamp(txn.timestamp)}
-                    </div>
-                  </div>
-
-                  <div className="transaction-body">
-                    <div className="transaction-type">
-                      <span className={`type-badge ${getTypeColor(txn.type)}`}>
-                        {txn.type}
-                      </span>
-                    </div>
-
-                    <div className="transaction-details">
-                      <div className="detail-row">
-                        <span className="label">Phone:</span>
-                        <span className="value">{txn.data.phoneNumber}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="label">Amount:</span>
-                        <span className="value">KES {txn.data.amount}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="label">Status:</span>
-                        <span
-                          className={`status-badge ${getStatusColor(
-                            txn.data.status
-                          )}`}
-                        >
-                          {txn.data.status}
-                        </span>
-                      </div>
-                      {txn.data.checkoutRequestID && (
-                        <div className="detail-row">
-                          <span className="label">Checkout ID:</span>
-                          <span className="value checkout-id">
-                            {txn.data.checkoutRequestID}
-                          </span>
-                        </div>
-                      )}
-                      {txn.data.mpesaReceiptNumber && (
-                        <div className="detail-row">
-                          <span className="label">Receipt:</span>
-                          <span className="value receipt">
-                            {txn.data.mpesaReceiptNumber}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="no-data">
-              <p>
-                {Object.values(filters).some((filter) => filter)
-                  ? "No transactions match the selected filters"
-                  : "No transactions found"}
-              </p>
-            </div>
-          )}
         </div>
       )}
     </div>

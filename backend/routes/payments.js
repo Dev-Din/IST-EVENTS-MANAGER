@@ -13,6 +13,8 @@ const {
   getTransactionsByPhone,
   getTransactionsByStatus,
   testSTKPush,
+  exportTransactionLogsPDF,
+  exportTransactionLogsCSV,
 } = require("../controllers/payments");
 const { protect } = require("../middleware/auth");
 
@@ -32,6 +34,10 @@ router.get("/logs", getTransactionLogs); // Public route for viewing transaction
 router.get("/logs/summary", getTransactionSummary); // Public route for transaction summary
 router.get("/logs/phone/:phoneNumber", getTransactionsByPhone); // Public route for transactions by phone
 router.get("/logs/status/:status", getTransactionsByStatus); // Public route for transactions by status
+
+// Export routes
+router.get("/logs/export/pdf", exportTransactionLogsPDF);
+router.get("/logs/export/csv", exportTransactionLogsCSV);
 
 // Payment history (legacy)
 router.get("/history", protect, getPaymentHistory);

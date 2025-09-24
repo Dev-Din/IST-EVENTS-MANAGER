@@ -17,6 +17,8 @@ const TransactionSchema = new mongoose.Schema(
     mpesaReceiptNumber: {
       type: String,
       trim: true,
+      unique: true,
+      sparse: true, // Allow null values but ensure uniqueness when present
     },
 
     // Transaction details

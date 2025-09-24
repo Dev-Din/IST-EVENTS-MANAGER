@@ -119,23 +119,38 @@ const processTransactionCallback = async (transaction, callbackResult, res) => {
       resultDesc: callbackResult.resultDesc,
     });
 
-    // Log to JSON file
+    // Log to JSON file (only if not already logged for this transaction)
     const logType = callbackResult.success
       ? "PAYMENT_COMPLETED"
       : "PAYMENT_FAILED";
-    transactionLogger.logTransaction(logType, {
-      checkoutRequestID: callbackResult.checkoutRequestID,
-      merchantRequestID: callbackResult.merchantRequestID,
-      resultCode: callbackResult.resultCode,
-      resultDesc: callbackResult.resultDesc,
-      mpesaReceiptNumber: callbackResult.mpesaReceiptNumber,
-      amount: callbackResult.amount,
-      phoneNumber: callbackResult.phoneNumber,
-      transactionId: transaction._id,
-      ticketId: transaction.ticket?._id,
-      status: callbackResult.success ? "completed" : "failed",
-      rawCallbackData: res.req.body,
-    });
+
+    // Check if this transaction has already been logged to prevent duplicates
+    const existingLogs = transactionLogger.getTransactionLogs();
+    const alreadyLogged = existingLogs?.transactions?.some(
+      (log) =>
+        log.data.transactionId === transaction._id.toString() &&
+        log.type === logType
+    );
+
+    if (!alreadyLogged) {
+      transactionLogger.logTransaction(logType, {
+        checkoutRequestID: callbackResult.checkoutRequestID,
+        merchantRequestID: callbackResult.merchantRequestID,
+        resultCode: callbackResult.resultCode,
+        resultDesc: callbackResult.resultDesc,
+        mpesaReceiptNumber: callbackResult.mpesaReceiptNumber,
+        amount: callbackResult.amount,
+        phoneNumber: callbackResult.phoneNumber,
+        transactionId: transaction._id,
+        ticketId: transaction.ticket?._id,
+        status: callbackResult.success ? "completed" : "failed",
+        rawCallbackData: res.req.body,
+      });
+    } else {
+      console.log(
+        `📝 Transaction ${transaction._id} already logged, skipping duplicate log entry`
+      );
+    }
 
     // Always respond with success to M-Pesa
     res.json({
@@ -1255,6 +1270,265 @@ const testSTKPush = asyncHandler(async (req, res, next) => {
   }
 });
 
+// Export transaction logs as PDF
+const exportTransactionLogsPDF = asyncHandler(async (req, res, next) => {
+  try {
+    const logs = transactionLogger.getTransactionLogs();
+
+    if (!logs) {
+      return next(
+        new ErrorResponse("Failed to retrieve transaction logs", 500)
+      );
+    }
+
+    // Generate PDF using the existing PDF generator
+    const pdfBuffer = await generateTransactionLogsPDF(logs);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="legitevents-transactions-${
+        new Date().toISOString().split("T")[0]
+      }.pdf"`
+    );
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    next(new ErrorResponse("Failed to generate PDF", 500));
+  }
+});
+
+// Export transaction logs as CSV
+const exportTransactionLogsCSV = asyncHandler(async (req, res, next) => {
+  try {
+    const logs = transactionLogger.getTransactionLogs();
+
+    if (!logs) {
+      return next(
+        new ErrorResponse("Failed to retrieve transaction logs", 500)
+      );
+    }
+
+    // Generate CSV
+    const csvContent = generateTransactionLogsCSV(logs);
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="legitevents-transactions-${
+        new Date().toISOString().split("T")[0]
+      }.csv"`
+    );
+    res.send(csvContent);
+  } catch (error) {
+    console.error("Error generating CSV:", error);
+    next(new ErrorResponse("Failed to generate CSV", 500));
+  }
+});
+
+// Helper function to generate PDF
+const generateTransactionLogsPDF = async (logs) => {
+  const PDFDocument = require("pdfkit");
+  const fs = require("fs");
+  const path = require("path");
+
+  // Use landscape format with proper margins
+  const doc = new PDFDocument({
+    margin: 20,
+    size: "A4",
+    layout: "landscape",
+  });
+  const buffers = [];
+
+  doc.on("data", buffers.push.bind(buffers));
+
+  return new Promise((resolve, reject) => {
+    doc.on("end", () => {
+      const pdfData = Buffer.concat(buffers);
+      resolve(pdfData);
+    });
+
+    doc.on("error", reject);
+
+    // Add LegitEvents logo
+    const logoPath = path.join(__dirname, "../../public/legit-events.png");
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, 20, 15, { width: 60 });
+    }
+
+    // Professional header with better spacing
+    doc
+      .fontSize(20)
+      .fillColor("#2c3e50")
+      .text("LegitEvents™ Transaction Logs", 100, 20)
+      .fontSize(10)
+      .fillColor("#7f8c8d")
+      .text(`Generated: ${new Date().toLocaleDateString("en-GB")}`, 100, 45)
+      .text(`Total: ${logs.metadata.totalTransactions} transactions`, 100, 60);
+
+    // Table setup with proper landscape dimensions
+    const tableTop = 80;
+    const itemHeight = 20;
+    let currentY = tableTop;
+
+    // Calculate column positions for landscape A4 (842x595 points)
+    const colPositions = {
+      no: 30,
+      date: 60,
+      time: 100,
+      transactionId: 140,
+      receipt: 280,
+      status: 420,
+      phone: 500,
+      amount: 650,
+    };
+
+    // Header background
+    doc
+      .rect(20, currentY - 3, 800, 22)
+      .fill("#34495e")
+      .fillColor("white")
+      .fontSize(9)
+      .font("Helvetica-Bold")
+      .text("No.", colPositions.no, currentY)
+      .text("Date", colPositions.date, currentY)
+      .text("Time", colPositions.time, currentY)
+      .text("Transaction ID", colPositions.transactionId, currentY)
+      .text("M-Pesa Receipt", colPositions.receipt, currentY)
+      .text("Status", colPositions.status, currentY)
+      .text("Phone", colPositions.phone, currentY)
+      .text("Amount", colPositions.amount, currentY);
+
+    currentY += 25;
+
+    // Add transaction data with proper landscape fitting
+    logs.transactions.forEach((txn, index) => {
+      if (currentY > 550) {
+        // New page if needed
+        doc.addPage({
+          margin: 20,
+          size: "A4",
+          layout: "landscape",
+        });
+        currentY = 30;
+
+        // Repeat header on new page
+        doc
+          .rect(20, currentY - 3, 800, 22)
+          .fill("#34495e")
+          .fillColor("white")
+          .fontSize(9)
+          .font("Helvetica-Bold")
+          .text("No.", colPositions.no, currentY)
+          .text("Date", colPositions.date, currentY)
+          .text("Time", colPositions.time, currentY)
+          .text("Transaction ID", colPositions.transactionId, currentY)
+          .text("M-Pesa Receipt", colPositions.receipt, currentY)
+          .text("Status", colPositions.status, currentY)
+          .text("Phone", colPositions.phone, currentY)
+          .text("Amount", colPositions.amount, currentY);
+
+        currentY += 25;
+      }
+
+      // Alternating row background
+      if (index % 2 === 0) {
+        doc.rect(20, currentY - 2, 800, itemHeight).fill("#f8f9fa");
+      }
+
+      const date = new Date(txn.timestamp).toLocaleDateString("en-GB");
+      const time = new Date(txn.timestamp).toLocaleTimeString("en-GB");
+      const receipt =
+        txn.data.mpesaReceiptNumber || txn.data.checkoutRequestID || "N/A";
+
+      // Set text color based on status
+      let statusColor = "#2c3e50";
+      if (txn.data.status === "completed") statusColor = "#27ae60";
+      if (txn.data.status === "failed") statusColor = "#e74c3c";
+      if (txn.data.status === "initiated") statusColor = "#f39c12";
+
+      doc
+        .fillColor("#2c3e50")
+        .fontSize(8)
+        .font("Helvetica")
+        .text(`${index + 1}`, colPositions.no, currentY)
+        .text(date, colPositions.date, currentY)
+        .text(time, colPositions.time, currentY)
+        .text(txn.id, colPositions.transactionId, currentY, {
+          width: 130,
+          ellipsis: true,
+        })
+        .text(receipt, colPositions.receipt, currentY, {
+          width: 130,
+          ellipsis: true,
+        })
+        .fillColor(statusColor)
+        .text(txn.data.status.toUpperCase(), colPositions.status, currentY)
+        .fillColor("#2c3e50")
+        .text(txn.data.phoneNumber, colPositions.phone, currentY, {
+          width: 140,
+          ellipsis: true,
+        })
+        .text(`KES ${txn.data.amount}`, colPositions.amount, currentY);
+
+      currentY += itemHeight;
+    });
+
+    // Professional footer
+    const pageHeight = doc.page.height;
+    doc
+      .fontSize(7)
+      .fillColor("#7f8c8d")
+      .text(
+        `LegitEvents™ Transaction Report - ${new Date().toLocaleString(
+          "en-GB"
+        )}`,
+        20,
+        pageHeight - 20
+      )
+      .text(`Page ${doc.page.number}`, 750, pageHeight - 20);
+
+    doc.end();
+  });
+};
+
+// Helper function to generate CSV
+const generateTransactionLogsCSV = (logs) => {
+  const headers = [
+    "No.",
+    "Date",
+    "Time",
+    "Transaction ID",
+    "M-Pesa Receipt",
+    "Status",
+    "Phone Number",
+    "Amount",
+  ];
+  const rows = [headers.join(",")];
+
+  logs.transactions.forEach((txn, index) => {
+    const date = new Date(txn.timestamp).toLocaleDateString("en-GB");
+    const time = new Date(txn.timestamp).toLocaleTimeString("en-GB");
+    const receipt =
+      txn.data.mpesaReceiptNumber || txn.data.checkoutRequestID || "N/A";
+
+    const row = [
+      index + 1,
+      `"${date}"`,
+      `"${time}"`,
+      `"${txn.id}"`,
+      `"${receipt}"`,
+      `"${txn.data.status}"`,
+      `"${txn.data.phoneNumber}"`,
+      `"KES ${txn.data.amount}"`,
+    ];
+
+    rows.push(row.join(","));
+  });
+
+  return rows.join("\n");
+};
+
 module.exports = {
   initiateMpesaPayment,
   handleMpesaCallback,
@@ -1268,4 +1542,6 @@ module.exports = {
   getTransactionsByPhone,
   getTransactionsByStatus,
   testSTKPush,
+  exportTransactionLogsPDF,
+  exportTransactionLogsCSV,
 };

@@ -20,30 +20,107 @@
   font-size: 2.5rem;
 }
 
-.logs-tabs {
-  display: flex;
-  gap: 10px;
+/* Custom Date Range Picker */
+.custom-date-range {
+  padding: 15px;
+  border-top: 1px solid #e0e0e0;
+  background: #f8f9fa;
 }
 
-.logs-tabs button {
-  padding: 12px 24px;
-  border: 2px solid #3498db;
-  background: white;
-  color: #3498db;
-  border-radius: 8px;
-  cursor: pointer;
+.date-inputs {
+  display: flex;
+  gap: 15px;
+  align-items: end;
+}
+
+.date-input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.date-input-group label {
+  font-size: 0.85rem;
   font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 2px;
+}
+
+.date-input-group input[type="date"] {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: white;
+  color: #2c3e50;
   transition: all 0.3s ease;
 }
 
-.logs-tabs button:hover {
-  background: #3498db;
-  color: white;
+.date-input-group input[type="date"]:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
-.logs-tabs button.active {
-  background: #3498db;
+.date-input-group input[type="date"]:hover {
+  border-color: #3498db;
+}
+
+/* Download Buttons */
+.download-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.download-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pdf-btn {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
   color: white;
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.pdf-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c0392b, #a93226);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.csv-btn {
+  background: linear-gradient(135deg, #27ae60, #229954);
+  color: white;
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+}
+
+.csv-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #229954, #1e8449);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
+}
+
+.download-btn i {
+  font-size: 16px;
 }
 
 .loading {
