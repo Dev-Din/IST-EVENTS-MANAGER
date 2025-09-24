@@ -133,7 +133,7 @@ const Purchase = () => {
       const requestPayload = {
         eventId: eventId,
         quantity: quantity,
-        phoneNumber: phoneNumber.trim(), // Remove any whitespace
+        phoneNumber: phoneNumber.trim(),
       };
 
       console.log("🚀 Frontend M-Pesa Payment Request:", requestPayload);
@@ -411,10 +411,7 @@ const Purchase = () => {
             <p>Your ticket has been purchased successfully via M-Pesa.</p>
             <div className="success-message">
               <i className="fas fa-check-circle"></i>
-              <span>
-                Payment confirmed! You will receive a confirmation SMS from
-                M-Pesa.
-              </span>
+              <span>Payment confirmed!</span>
             </div>
 
             <div className="ticket-summary">
