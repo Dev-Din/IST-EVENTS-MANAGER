@@ -47,10 +47,57 @@ const Purchase = () => {
     fetchEvent();
   }, [fetchEvent]);
 
+  // Debug: Log success state changes
+  useEffect(() => {
+    console.log("🎯 Success state changed:", success);
+    console.log("🎯 Payment status:", paymentStatus);
+  }, [success, paymentStatus]);
+
+  // Persist success state to prevent loss on re-render
+  useEffect(() => {
+    if (success) {
+      localStorage.setItem("purchaseSuccess", "true");
+      localStorage.setItem("purchaseEventId", eventId);
+      localStorage.setItem("purchaseQuantity", quantity.toString());
+    } else {
+      localStorage.removeItem("purchaseSuccess");
+      localStorage.removeItem("purchaseEventId");
+      localStorage.removeItem("purchaseQuantity");
+    }
+  }, [success, eventId, quantity]);
+
+  // Check for persisted success state on component mount
+  useEffect(() => {
+    const persistedSuccess = localStorage.getItem("purchaseSuccess");
+    const persistedEventId = localStorage.getItem("purchaseEventId");
+
+    if (persistedSuccess === "true" && persistedEventId === eventId) {
+      console.log("🔄 Restoring success state from localStorage");
+      setSuccess(true);
+      setPaymentStatus("success");
+      const persistedQuantity = localStorage.getItem("purchaseQuantity");
+      if (persistedQuantity) {
+        setPurchasedQuantity(parseInt(persistedQuantity));
+      }
+    }
+  }, [eventId]);
+
   const handleQuantityChange = (newQuantity) => {
     if (newQuantity >= 1 && newQuantity <= 10) {
       setQuantity(newQuantity);
     }
+  };
+
+  // Clear success state for new purchases
+  const clearSuccessState = () => {
+    setSuccess(false);
+    setPaymentStatus("");
+    setPurchasedTicket(null);
+    setPurchasedQuantity(1);
+    setMpesaPayment(null);
+    localStorage.removeItem("purchaseSuccess");
+    localStorage.removeItem("purchaseEventId");
+    localStorage.removeItem("purchaseQuantity");
   };
 
   const calculateTotal = () => {
@@ -111,6 +158,19 @@ const Purchase = () => {
 
       // Start polling for payment status
       pollPaymentStatus(response.data.data.checkoutRequestID);
+
+      // Also start a more frequent check for the first 2 minutes
+      setTimeout(() => {
+        checkPaymentSuccess(response.data.data.checkoutRequestID);
+      }, 30000); // Check after 30 seconds
+
+      setTimeout(() => {
+        checkPaymentSuccess(response.data.data.checkoutRequestID);
+      }, 60000); // Check after 1 minute
+
+      setTimeout(() => {
+        checkPaymentSuccess(response.data.data.checkoutRequestID);
+      }, 120000); // Check after 2 minutes
     } catch (error) {
       console.error("❌ Frontend M-Pesa Error:", error);
       console.error("❌ Error Response:", error.response?.data);
@@ -150,24 +210,30 @@ const Purchase = () => {
           }
         );
 
-        const { resultCode, ticket } = response.data.data;
+        const { resultCode, ticket, transaction } = response.data.data;
 
-        if (resultCode === 0) {
+        // Convert resultCode to number for comparison
+        const numericResultCode = parseInt(resultCode);
+
+        if (numericResultCode === 0) {
           // Payment successful
+          console.log("🎉 Payment successful! Setting success state...");
           setPaymentStatus("success");
           setPurchasedQuantity(quantity);
           setPurchasedTicket(ticket);
           setSuccess(true);
           return;
-        } else if (resultCode === 1032) {
+        } else if (numericResultCode === 1032) {
           // User cancelled
           setPaymentStatus("failed");
           setError("Payment was cancelled. Please try again.");
           return;
         } else if (attempts >= maxAttempts) {
-          // Timeout
-          setPaymentStatus("failed");
-          setError("Payment timeout. Please check your phone or try again.");
+          // Timeout - check if payment was actually successful
+          console.log(
+            "Polling timeout - checking if payment was successful..."
+          );
+          await checkPaymentSuccess(checkoutRequestID);
           return;
         }
 
@@ -179,13 +245,86 @@ const Purchase = () => {
         if (attempts < maxAttempts) {
           setTimeout(poll, 10000);
         } else {
-          setPaymentStatus("failed");
-          setError("Failed to check payment status. Please contact support.");
+          // Final attempt - check if payment was successful
+          console.log("Polling failed - checking if payment was successful...");
+          await checkPaymentSuccess(checkoutRequestID);
         }
       }
     };
 
     poll();
+  };
+
+  // Fallback function to check if payment was successful
+  const checkPaymentSuccess = async (checkoutRequestID) => {
+    try {
+      // First, check transaction logs for successful payment
+      const logsResponse = await axios.get(
+        `${
+          process.env.REACT_APP_API_URL || "http://localhost:5000/api"
+        }/payments/logs`
+      );
+
+      const logs = logsResponse.data.data;
+      if (logs && logs.transactions) {
+        // Look for a successful payment completion log
+        const successfulPayment = logs.transactions.find(
+          (log) =>
+            log.data.checkoutRequestID === checkoutRequestID &&
+            log.type === "PAYMENT_COMPLETED"
+        );
+
+        if (successfulPayment) {
+          console.log(
+            "Payment was successful (from logs) - redirecting to success page"
+          );
+          setPaymentStatus("success");
+          setPurchasedQuantity(quantity);
+          setSuccess(true);
+          return;
+        }
+      }
+
+      // If not found in logs, check transactions table
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${
+          process.env.REACT_APP_API_URL || "http://localhost:5000/api"
+        }/payments/transactions`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Look for a successful transaction with this checkout ID
+      const successfulTransaction = response.data.data.find(
+        (txn) =>
+          txn.checkoutRequestID === checkoutRequestID &&
+          txn.status === "success"
+      );
+
+      if (successfulTransaction) {
+        console.log(
+          "Payment was successful (from transactions) - redirecting to success page"
+        );
+        setPaymentStatus("success");
+        setPurchasedQuantity(quantity);
+        setSuccess(true);
+        return;
+      }
+
+      // If no successful transaction found, show error
+      setPaymentStatus("failed");
+      setError(
+        "Payment status unclear. Please check your phone or contact support."
+      );
+    } catch (error) {
+      console.error("Error checking payment success:", error);
+      setPaymentStatus("failed");
+      setError("Failed to verify payment status. Please contact support.");
+    }
   };
 
   const handleConfirmPayment = async (paymentDetails) => {
@@ -269,7 +408,14 @@ const Purchase = () => {
               <i className="fas fa-check-circle"></i>
             </div>
             <h1>Purchase Successful!</h1>
-            <p>Your ticket has been purchased successfully.</p>
+            <p>Your ticket has been purchased successfully via M-Pesa.</p>
+            <div className="success-message">
+              <i className="fas fa-check-circle"></i>
+              <span>
+                Payment confirmed! You will receive a confirmation SMS from
+                M-Pesa.
+              </span>
+            </div>
 
             <div className="ticket-summary">
               <h3>Ticket Details</h3>
@@ -307,6 +453,20 @@ const Purchase = () => {
                     )}
                   </span>
                 </div>
+                {purchasedTicket && (
+                  <div className="info-row">
+                    <span className="label">Ticket Number:</span>
+                    <span className="value">
+                      {purchasedTicket.ticketNumber}
+                    </span>
+                  </div>
+                )}
+                <div className="info-row">
+                  <span className="label">Payment Method:</span>
+                  <span className="value">
+                    <i className="fas fa-mobile-alt"></i> M-Pesa Mobile Money
+                  </span>
+                </div>
                 <div className="info-row">
                   <span className="label">Buyer:</span>
                   <span className="value">
@@ -330,6 +490,10 @@ const Purchase = () => {
                 <i className="fas fa-ticket-alt"></i>
                 View My Tickets
               </Link>
+              <button className="btn btn-secondary" onClick={clearSuccessState}>
+                <i className="fas fa-plus"></i>
+                Purchase Another Ticket
+              </button>
               <Link to="/" className="btn btn-outline">
                 Browse More Events
               </Link>

@@ -381,23 +381,88 @@ const queryMpesaStatus = asyncHandler(async (req, res, next) => {
   const { checkoutRequestID } = req.params;
 
   try {
+    // Find the transaction first
+    const transaction = await Transaction.findOne({
+      checkoutRequestID: checkoutRequestID,
+    }).populate("ticket event user");
+
+    if (!transaction) {
+      return next(new ErrorResponse("Transaction not found", 404));
+    }
+
+    // If transaction is already completed, return its status
+    if (transaction.status === "success") {
+      return res.json({
+        success: true,
+        data: {
+          checkoutRequestID: checkoutRequestID,
+          resultCode: "0", // Success
+          resultDesc: "The service request is processed successfully.",
+          transaction: {
+            id: transaction._id,
+            status: transaction.status,
+            amount: transaction.amount,
+            currency: transaction.currency,
+            phoneNumber: transaction.phoneNumber,
+            initiatedAt: transaction.initiatedAt,
+            completedAt: transaction.completedAt,
+          },
+          ticket: transaction.ticket
+            ? {
+                id: transaction.ticket._id,
+                ticketNumber: transaction.ticket.ticketNumber,
+                status: transaction.ticket.status,
+                paymentStatus: transaction.ticket.paymentStatus,
+                event: transaction.event.title,
+                amount: transaction.ticket.totalPrice,
+              }
+            : null,
+        },
+      });
+    }
+
+    // If transaction is still pending, query M-Pesa for latest status
     const statusResult = await mpesaService.querySTKPushStatus(
       checkoutRequestID
     );
 
+    // If M-Pesa query fails due to rate limiting, return transaction status
     if (!statusResult.success) {
-      return next(
-        new ErrorResponse(
-          `Failed to query payment status: ${statusResult.error}`,
-          400
-        )
+      console.log(
+        "M-Pesa query failed, returning transaction status:",
+        statusResult.error
       );
+      return res.json({
+        success: true,
+        data: {
+          checkoutRequestID: checkoutRequestID,
+          resultCode: transaction.status === "success" ? "0" : "1",
+          resultDesc:
+            transaction.status === "success"
+              ? "The service request is processed successfully."
+              : "Transaction is still pending",
+          transaction: {
+            id: transaction._id,
+            status: transaction.status,
+            amount: transaction.amount,
+            currency: transaction.currency,
+            phoneNumber: transaction.phoneNumber,
+            initiatedAt: transaction.initiatedAt,
+            completedAt: transaction.completedAt,
+          },
+          ticket: transaction.ticket
+            ? {
+                id: transaction.ticket._id,
+                ticketNumber: transaction.ticket.ticketNumber,
+                status: transaction.ticket.status,
+                paymentStatus: transaction.ticket.paymentStatus,
+                event: transaction.event.title,
+                amount: transaction.ticket.totalPrice,
+              }
+            : null,
+        },
+      });
     }
-
-    // Find the transaction
-    const transaction = await Transaction.findOne({
-      checkoutRequestID: checkoutRequestID,
-    }).populate("ticket event user");
 
     res.json({
       success: true,
