@@ -10,6 +10,11 @@ const {
 
 const UserSchema = new mongoose.Schema(
   {
+    userId: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow null values but ensure uniqueness when present
+    },
     username: {
       type: String,
       required: [true, "Username is required"],
@@ -128,11 +133,56 @@ const UserSchema = new mongoose.Schema(
 // Indexes for better performance
 UserSchema.index({ email: 1 });
 UserSchema.index({ username: 1 });
+UserSchema.index({ userId: 1 });
 UserSchema.index({ role: 1, isActive: 1 });
 
 // Virtual for account lock status
 UserSchema.virtual("isLocked").get(function () {
   return !!(this.lockUntil && this.lockUntil > Date.now());
+});
+
+// Generate user ID before saving
+UserSchema.pre("save", async function (next) {
+  // Only generate userId if it doesn't exist and user is new
+  if (!this.userId && this.isNew) {
+    try {
+      let prefix;
+      let roleFilter;
+
+      // Determine prefix and role filter based on user role
+      if (this.role === "super-admin" || this.role === "sub-admin") {
+        prefix = "AD";
+        roleFilter = { role: { $in: ["super-admin", "sub-admin"] } };
+      } else {
+        prefix = "CL";
+        roleFilter = { role: "client" };
+      }
+
+      // Find the highest existing ID for this role
+      const lastUser = await this.constructor
+        .findOne(roleFilter)
+        .sort({ userId: -1 })
+        .select("userId");
+
+      let nextNumber = 1;
+      if (lastUser && lastUser.userId) {
+        // Extract number from existing ID (e.g., "CL-001" -> 1)
+        const match = lastUser.userId.match(/-(\d+)$/);
+        if (match) {
+          nextNumber = parseInt(match[1]) + 1;
+        }
+      }
+
+      // Generate new ID with zero-padded number
+      this.userId = `${prefix}-${nextNumber.toString().padStart(3, "0")}`;
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  } else {
+    next();
+  }
 });
 
 // Hash password before saving

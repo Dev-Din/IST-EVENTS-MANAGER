@@ -55,6 +55,10 @@ const TicketSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    emailSent: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

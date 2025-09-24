@@ -152,8 +152,17 @@
 
 .user-info {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.user-info > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .user-avatar {
@@ -171,32 +180,54 @@
 .user-name {
   font-weight: 600;
   color: var(--gray-900);
+  text-align: left;
+  align-self: flex-start;
 }
 
 .user-username {
   color: var(--gray-600);
   font-size: 0.9rem;
+  text-align: left;
+  align-self: flex-start;
 }
 
 .user-meta {
   color: var(--gray-600);
   font-size: 0.8rem;
   margin-top: 0.25rem;
+  text-align: left;
+  align-self: flex-start;
+}
+
+.contact-info {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .contact-info div {
   margin-bottom: 0.25rem;
+  text-align: left;
+  align-self: flex-start;
+  width: 100%;
 }
 
 .phone {
   color: var(--gray-600);
   font-size: 0.9rem;
+  text-align: left;
+  align-self: flex-start;
 }
 
 .permissions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  text-align: left;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 100%;
 }
 
 .permission-badge {
@@ -206,12 +237,17 @@
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 500;
+  text-align: left;
+  align-self: flex-start;
 }
 
 .activity-info {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  text-align: left;
+  align-items: flex-start;
+  width: 100%;
 }
 
 .activity-stat {
@@ -220,6 +256,10 @@
   gap: 0.5rem;
   font-size: 0.9rem;
   color: var(--text-muted);
+  text-align: left;
+  justify-content: flex-start;
+  align-self: flex-start;
+  width: 100%;
 }
 
 .activity-stat i {
@@ -239,6 +279,9 @@
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
+  text-align: left;
+  align-self: flex-start;
+  display: inline-block;
 }
 
 .status-badge.active {
@@ -254,6 +297,8 @@
 .action-buttons {
   display: flex;
   gap: 0.5rem;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .action-buttons .btn {
@@ -619,4 +664,55 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* User ID Badge Styles */
+.user-id {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.id-badge {
+  display: inline-block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  letter-spacing: 0.5px;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.client-id {
+  color: #0277bd;
+}
+
+.admin-id {
+  color: #7b1fa2;
+}
+
+/* Table Content Alignment */
+.users-table table {
+  text-align: left;
+}
+
+.users-table th {
+  text-align: left;
+  padding-left: 1rem;
+}
+
+.users-table td {
+  text-align: left;
+  padding-left: 1rem;
+  vertical-align: top;
+}
+
+/* Ensure all table content is left aligned */
+.users-table .user-info,
+.users-table .contact-info,
+.users-table .activity-info,
+.users-table .permissions {
+  text-align: left;
+  justify-content: flex-start;
 }

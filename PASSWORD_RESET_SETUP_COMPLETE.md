@@ -101,7 +101,7 @@ node test-email.js
 # ✅ Already configured
 PORT=5000
 NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/event_organiser
+MONGODB_URI=mongodb://localhost:27017/legitevents
 JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
 JWT_EXPIRE=7d
 JWT_COOKIE_EXPIRE=7

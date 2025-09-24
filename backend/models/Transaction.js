@@ -93,6 +93,10 @@ const TransactionSchema = new mongoose.Schema(
     completedAt: {
       type: Date,
     },
+    emailSent: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

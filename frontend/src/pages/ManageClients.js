@@ -255,6 +255,7 @@ const ManageClients = () => {
             <table>
               <thead>
                 <tr>
+                  <th>Client ID</th>
                   <th>Client</th>
                   <th>Contact</th>
                   <th>Activity</th>
@@ -266,6 +267,13 @@ const ManageClients = () => {
               <tbody>
                 {filteredClients.map((client) => (
                   <tr key={client._id}>
+                    <td>
+                      <div className="user-id">
+                        <span className="id-badge client-id">
+                          {client.userId || "N/A"}
+                        </span>
+                      </div>
+                    </td>
                     <td>
                       <div className="user-info">
                         <div className="user-avatar">

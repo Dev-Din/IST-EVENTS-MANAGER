@@ -5,7 +5,7 @@ require("dotenv").config();
 const connectDB = async () => {
   try {
     await mongoose.connect(
-      process.env.MONGO_URI || "mongodb://localhost:27017/legitevents"
+      process.env.MONGODB_URI || "mongodb://localhost:27017/legitevents"
     );
     console.log("MongoDB Connected for user check");
   } catch (error) {
@@ -20,7 +20,9 @@ const checkUsers = async () => {
 
     console.log("🔍 Checking all users in database...\n");
 
-    const allUsers = await User.find({}).select("username email role isActive");
+    const allUsers = await User.find({}).select(
+      "userId username email role isActive"
+    );
 
     console.log(`📊 Total users found: ${allUsers.length}\n`);
 
@@ -42,7 +44,11 @@ const checkUsers = async () => {
 
     console.log("\n📝 All users:");
     allUsers.forEach((user, index) => {
-      console.log(`${index + 1}. ${user.username} (${user.email})`);
+      console.log(
+        `${index + 1}. ${user.userId || "No ID"} - ${user.username} (${
+          user.email
+        })`
+      );
       console.log(`   Role: ${user.role}`);
       console.log(`   Active: ${user.isActive}`);
       console.log("");
@@ -50,16 +56,16 @@ const checkUsers = async () => {
 
     // Check specifically for client users
     const clientUsers = await User.find({ role: "client" }).select(
-      "username email isActive"
+      "userId username email isActive"
     );
     console.log(`🎯 Client users specifically: ${clientUsers.length}`);
 
     if (clientUsers.length > 0) {
       clientUsers.forEach((user, index) => {
         console.log(
-          `${index + 1}. ${user.username} (${user.email}) - Active: ${
-            user.isActive
-          }`
+          `${index + 1}. ${user.userId || "No ID"} - ${user.username} (${
+            user.email
+          }) - Active: ${user.isActive}`
         );
       });
     }

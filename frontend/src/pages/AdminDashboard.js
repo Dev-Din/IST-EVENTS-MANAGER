@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import { adminAPI, eventsAPI } from "../services/api";
+import { formatDate } from "../utils/dateFormatter";
 import "./Dashboard.css";
 
 const AdminDashboard = () => {
@@ -34,11 +35,11 @@ const AdminDashboard = () => {
 
       setStats({
         totalEvents: eventsResponse.data.data?.length || 0,
-        totalClients: statsResponse.data.totalClients || 0,
-        totalSubAdmins: statsResponse.data.totalSubAdmins || 0,
-        totalRevenue: statsResponse.data.totalRevenue || 0,
+        totalClients: statsResponse.data.data?.totalClients || 0,
+        totalSubAdmins: statsResponse.data.data?.totalSubAdmins || 0,
+        totalRevenue: statsResponse.data.data?.totalRevenue || 0,
         recentEvents: eventsResponse.data.data?.slice(0, 5) || [],
-        recentTickets: statsResponse.data.recentTickets || [],
+        recentTickets: statsResponse.data.data?.recentTickets || [],
       });
 
       setError("");
@@ -57,13 +58,6 @@ const AdminDashboard = () => {
     }).format(price);
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   if (loading) {
     return <Loading message="Loading dashboard..." />;

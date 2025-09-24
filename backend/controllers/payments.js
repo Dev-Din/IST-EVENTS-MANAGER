@@ -2,6 +2,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
 const mpesaService = require("../utils/mpesaService");
 const TransactionLogger = require("../utils/transactionLogger");
+const emailService = require("../utils/emailService");
 const Ticket = require("../models/Ticket");
 const Transaction = require("../models/Transaction");
 const Event = require("../models/Event");
@@ -12,6 +13,143 @@ const currentMpesaService = mpesaService;
 
 // Initialize transaction logger
 const transactionLogger = new TransactionLogger();
+
+// Helper function to process transaction callbacks
+const processTransactionCallback = async (transaction, callbackResult, res) => {
+  try {
+    console.log("🔄 Processing transaction callback for:", transaction._id);
+
+    if (callbackResult.success) {
+      // Payment successful
+      await transaction.markSuccessful(callbackResult);
+
+      if (transaction.ticket) {
+        // Update ticket status
+        transaction.ticket.status = "confirmed";
+        transaction.ticket.paymentStatus = "completed";
+        transaction.ticket.paymentReference = callbackResult.mpesaReceiptNumber;
+        await transaction.ticket.save();
+
+        // Update event available tickets
+        if (transaction.event) {
+          await Event.findByIdAndUpdate(transaction.event._id, {
+            $inc: { availableTickets: -transaction.ticket.quantity },
+          });
+        }
+
+        console.log(
+          `Ticket ${transaction.ticket.ticketNumber} confirmed via M-Pesa`
+        );
+
+        // BULLETPROOF EMAIL SENDING
+        try {
+          console.log("🛡️ BULLETPROOF: Sending ticket confirmation email");
+
+          // Mark ticket as needing email (will be picked up by bulletproof system)
+          transaction.ticket.emailSent = false;
+          await transaction.ticket.save();
+
+          // Mark transaction as needing email
+          transaction.emailSent = false;
+          await transaction.save();
+
+          console.log("✅ Transaction and ticket marked for email sending");
+
+          // Try immediate email sending
+          if (transaction.user && transaction.event) {
+            const user = await User.findById(
+              transaction.user._id || transaction.user
+            );
+            const event = await Event.findById(
+              transaction.event._id || transaction.event
+            );
+
+            if (user && event) {
+              console.log(`📧 Sending immediate email to ${user.email}`);
+
+              emailService
+                .sendTicketConfirmationEmail(transaction.ticket, user, event)
+                .then(() => {
+                  console.log(`✅ Immediate email sent to ${user.email}`);
+                  // Mark as sent
+                  transaction.ticket.emailSent = true;
+                  transaction.emailSent = true;
+                  transaction.ticket.save();
+                  transaction.save();
+                })
+                .catch((emailError) => {
+                  console.error(`❌ Immediate email failed:`, emailError);
+                  console.log(
+                    "🛡️ BULLETPROOF: Email will be retried by background system"
+                  );
+                });
+            }
+          }
+        } catch (emailError) {
+          console.error("❌ Error in bulletproof email system:", emailError);
+          console.log(
+            "🛡️ BULLETPROOF: Email will be handled by background system"
+          );
+        }
+      }
+    } else {
+      // Payment failed
+      await transaction.markFailed(
+        callbackResult.resultCode,
+        callbackResult.resultDesc,
+        callbackResult
+      );
+
+      if (transaction.ticket) {
+        transaction.ticket.status = "cancelled";
+        transaction.ticket.paymentStatus = "failed";
+        await transaction.ticket.save();
+
+        console.log(
+          `Ticket ${transaction.ticket.ticketNumber} payment failed: ${callbackResult.resultDesc}`
+        );
+      }
+    }
+
+    // Log transaction
+    currentMpesaService.logTransaction("CALLBACK", {
+      checkoutRequestID: callbackResult.checkoutRequestID,
+      success: callbackResult.success,
+      resultCode: callbackResult.resultCode,
+      resultDesc: callbackResult.resultDesc,
+    });
+
+    // Log to JSON file
+    const logType = callbackResult.success
+      ? "PAYMENT_COMPLETED"
+      : "PAYMENT_FAILED";
+    transactionLogger.logTransaction(logType, {
+      checkoutRequestID: callbackResult.checkoutRequestID,
+      merchantRequestID: callbackResult.merchantRequestID,
+      resultCode: callbackResult.resultCode,
+      resultDesc: callbackResult.resultDesc,
+      mpesaReceiptNumber: callbackResult.mpesaReceiptNumber,
+      amount: callbackResult.amount,
+      phoneNumber: callbackResult.phoneNumber,
+      transactionId: transaction._id,
+      ticketId: transaction.ticket?._id,
+      status: callbackResult.success ? "completed" : "failed",
+      rawCallbackData: res.req.body,
+    });
+
+    // Always respond with success to M-Pesa
+    res.json({
+      ResultCode: 0,
+      ResultDesc: "Success",
+    });
+  } catch (error) {
+    console.error("Error processing transaction callback:", error);
+    res.json({
+      ResultCode: 0,
+      ResultDesc: "Success",
+    });
+  }
+};
 
 // Mock callback simulation for sandbox testing
 const simulateSuccessfulCallback = async (checkoutRequestID, transactionId) => {
@@ -73,7 +211,7 @@ const simulateSuccessfulCallback = async (checkoutRequestID, transactionId) => {
 // @access  Private
 const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
   const { eventId, quantity, phoneNumber } = req.body;
-  const userId = req.user?.id || "507f1f77bcf86cd799439011"; // Use test user ID if no auth
+  const userId = req.user?.id;
 
   console.log("🚀 Frontend Payment Request Received:");
   console.log("📱 Phone Number:", phoneNumber);
@@ -91,6 +229,13 @@ const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
     );
   }
 
+  // Validate user authentication
+  if (!userId) {
+    return next(
+      new ErrorResponse("User authentication required for ticket purchase", 401)
+    );
+  }
+
   // Validate phone number
   if (!currentMpesaService.validatePhoneNumber(phoneNumber)) {
     return next(
@@ -103,7 +248,12 @@ const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
 
   try {
     // Get event details
+    console.log("🔍 Looking for event with ID:", eventId);
     const event = await Event.findById(eventId);
+    console.log("🔍 Event lookup result:", event ? "Found" : "Not found");
+    if (event) {
+      console.log("🔍 Event details:", event.title, "Active:", event.isActive);
+    }
     if (!event) {
       return next(new ErrorResponse("Event not found", 404));
     }
@@ -158,8 +308,10 @@ const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
       console.log("⏳ M-Pesa service not ready, waiting...");
       const isReady = await mpesaService.waitForReady(10000); // 10 second timeout
       if (!isReady) {
-        await Ticket.findByIdAndDelete(ticket._id);
-        await Transaction.findByIdAndDelete(transaction._id);
+        console.log(
+          "⚠️ M-Pesa service not ready, but keeping transaction for callback processing"
+        );
+        // Don't delete the transaction - keep it for callback processing
         return next(
           new ErrorResponse(
             "M-Pesa service is currently unavailable. Please try again in a moment.",
@@ -180,9 +332,10 @@ const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
 
     if (!stkResult.success) {
       console.error(`❌ STK Push failed: ${stkResult.error}`);
-      // Delete the pending ticket and transaction if STK Push fails
-      await Ticket.findByIdAndDelete(ticket._id);
-      await Transaction.findByIdAndDelete(transaction._id);
+      // Keep the transaction for potential callback processing
+      console.log(
+        "⚠️ STK Push failed, but keeping transaction for callback processing"
+      );
       return next(
         new ErrorResponse(
           `M-Pesa payment initiation failed: ${stkResult.error}`,
@@ -271,6 +424,38 @@ const handleMpesaCallback = asyncHandler(async (req, res, next) => {
       ],
     }).populate("ticket event user");
 
+    // If transaction not found, try to find by phone number and amount
+    if (!transaction) {
+      console.log(
+        "🔍 Transaction not found by checkout ID, trying phone number lookup..."
+      );
+      const fallbackTransaction = await Transaction.findOne({
+        phoneNumber: callbackResult.phoneNumber,
+        amount: callbackResult.amount,
+        status: "pending",
+      }).populate("ticket event user");
+
+      if (fallbackTransaction) {
+        console.log(
+          "✅ Found transaction by phone number:",
+          fallbackTransaction._id
+        );
+        // Update with callback data
+        fallbackTransaction.checkoutRequestID =
+          callbackResult.checkoutRequestID;
+        fallbackTransaction.merchantRequestID =
+          callbackResult.merchantRequestID;
+        await fallbackTransaction.save();
+
+        // Process this transaction instead
+        return await processTransactionCallback(
+          fallbackTransaction,
+          callbackResult,
+          res
+        );
+      }
+    }
+
     console.log(
       "🔍 Transaction search result:",
       transaction ? "Found" : "Not found"
@@ -287,6 +472,7 @@ const handleMpesaCallback = asyncHandler(async (req, res, next) => {
         "or account reference:",
         callbackResult.accountReference
       );
+
       return res.json({
         ResultCode: 0,
         ResultDesc: "Success",
@@ -312,6 +498,61 @@ const handleMpesaCallback = asyncHandler(async (req, res, next) => {
         console.log(
           `Ticket ${transaction.ticket.ticketNumber} confirmed via M-Pesa`
         );
+
+        // BULLETPROOF EMAIL SENDING - Multiple fallback mechanisms
+        try {
+          console.log("🛡️ BULLETPROOF: Sending ticket confirmation email");
+          console.log("🔍 Transaction details for email:");
+          console.log("  - User ID:", transaction.user);
+          console.log("  - Event ID:", transaction.event);
+          console.log("  - Ticket ID:", transaction.ticket);
+
+          // Mark ticket as needing email (will be picked up by bulletproof system)
+          transaction.ticket.emailSent = false;
+          await transaction.ticket.save();
+
+          // Mark transaction as needing email
+          transaction.emailSent = false;
+          await transaction.save();
+
+          console.log("✅ Transaction and ticket marked for email sending");
+
+          // Try immediate email sending
+          if (transaction.user && transaction.event) {
+            const user = await User.findById(
+              transaction.user._id || transaction.user
+            );
+            const event = await Event.findById(
+              transaction.event._id || transaction.event
+            );
+
+            if (user && event) {
+              console.log(`📧 Sending immediate email to ${user.email}`);
+
+              emailService
+                .sendTicketConfirmationEmail(transaction.ticket, user, event)
+                .then(() => {
+                  console.log(`✅ Immediate email sent to ${user.email}`);
+                  // Mark as sent
+                  transaction.ticket.emailSent = true;
+                  transaction.emailSent = true;
+                  transaction.ticket.save();
+                  transaction.save();
+                })
+                .catch((emailError) => {
+                  console.error(`❌ Immediate email failed:`, emailError);
+                  console.log(
+                    "🛡️ BULLETPROOF: Email will be retried by background system"
+                  );
+                });
+            }
+          }
+        } catch (emailError) {
+          console.error("❌ Error in bulletproof email system:", emailError);
+          console.log(
+            "🛡️ BULLETPROOF: Email will be handled by background system"
+          );
+        }
       }
     } else {
       // Payment failed
@@ -363,6 +604,61 @@ const handleMpesaCallback = asyncHandler(async (req, res, next) => {
       ResultCode: 0,
       ResultDesc: "Success",
     });
+
+    // Final fallback: If no transaction was found but payment was successful,
+    // try to send a basic confirmation email
+    if (callbackResult.success && !transaction) {
+      console.log("🔄 Attempting final fallback email sending...");
+
+      // Try to find any recent transaction for this phone number
+      const recentTransaction = await Transaction.findOne({
+        phoneNumber: callbackResult.phoneNumber,
+        status: "pending",
+      })
+        .populate("ticket event user")
+        .sort({ createdAt: -1 });
+
+      if (recentTransaction) {
+        console.log(
+          "🔍 Found recent transaction for fallback email:",
+          recentTransaction._id
+        );
+
+        // Update the transaction with callback data
+        recentTransaction.checkoutRequestID = callbackResult.checkoutRequestID;
+        recentTransaction.merchantRequestID = callbackResult.merchantRequestID;
+        await recentTransaction.markSuccessful(callbackResult);
+
+        // Update ticket
+        if (recentTransaction.ticket) {
+          recentTransaction.ticket.status = "confirmed";
+          recentTransaction.ticket.paymentStatus = "completed";
+          recentTransaction.ticket.paymentReference =
+            callbackResult.mpesaReceiptNumber;
+          await recentTransaction.ticket.save();
+        }
+
+        // BULLETPROOF FINAL FALLBACK EMAIL SENDING
+        try {
+          console.log("🛡️ BULLETPROOF: Final fallback email sending");
+
+          // Mark for bulletproof system
+          recentTransaction.ticket.emailSent = false;
+          recentTransaction.emailSent = false;
+          await recentTransaction.ticket.save();
+          await recentTransaction.save();
+
+          console.log(
+            "✅ Final fallback transaction marked for bulletproof email system"
+          );
+        } catch (emailError) {
+          console.error(
+            "❌ Error in bulletproof final fallback system:",
+            emailError
+          );
+        }
+      }
+    }
   } catch (error) {
     console.error("Error processing M-Pesa callback:", error);
 
@@ -750,7 +1046,7 @@ const getTransactionsByStatus = asyncHandler(async (req, res, next) => {
 // @access  Public (for testing)
 const testSTKPush = asyncHandler(async (req, res, next) => {
   const { eventId, quantity, phoneNumber } = req.body;
-  const userId = "507f1f77bcf86cd799439011"; // Test user ID
+  const userId = req.user?.id;
 
   console.log("🚀 Testing STK Push with phone:", phoneNumber);
 
@@ -761,6 +1057,13 @@ const testSTKPush = asyncHandler(async (req, res, next) => {
         "Event ID, quantity, and phone number are required",
         400
       )
+    );
+  }
+
+  // Validate user authentication
+  if (!userId) {
+    return next(
+      new ErrorResponse("User authentication required for ticket purchase", 401)
     );
   }
 

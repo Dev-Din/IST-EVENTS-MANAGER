@@ -260,6 +260,7 @@ const ManageSubAdmins = () => {
             <table>
               <thead>
                 <tr>
+                  <th>Admin ID</th>
                   <th>User</th>
                   <th>Contact</th>
                   <th>Permissions</th>
@@ -273,6 +274,13 @@ const ManageSubAdmins = () => {
                   .filter((admin) => admin && admin._id)
                   .map((admin) => (
                     <tr key={admin._id}>
+                      <td>
+                        <div className="user-id">
+                          <span className="id-badge admin-id">
+                            {admin.userId || "N/A"}
+                          </span>
+                        </div>
+                      </td>
                       <td>
                         <div className="user-info">
                           <div className="user-avatar">
