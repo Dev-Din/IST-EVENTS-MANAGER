@@ -190,7 +190,7 @@ const addEvents = async () => {
         email: "admin@legitevents.com",
         password: "Admin123!",
         fullName: "System Administrator",
-        phone: "254712345678",
+        phone: "254700000000", // Placeholder - should be updated by admin
         country: "KE",
         role: "super-admin",
         isActive: true,

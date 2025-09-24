@@ -105,6 +105,21 @@
   background: linear-gradient(135deg, #43e97b, #38f9d7);
 }
 
+.card-icon.transactions {
+  background: linear-gradient(135deg, #ff9a9e, #fecfef);
+}
+
+.overview-card.clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.overview-card.clickable:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-medium);
+  background: linear-gradient(135deg, #f8f9ff, #e8f0ff);
+}
+
 .card-content h3 {
   font-size: clamp(1.4rem, 3.5vw, 2rem);
   font-weight: 700;

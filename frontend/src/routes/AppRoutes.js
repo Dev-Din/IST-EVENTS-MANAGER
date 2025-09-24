@@ -19,6 +19,7 @@ import ManageEvents from "../pages/ManageEvents";
 import ManageSubAdmins from "../pages/ManageSubAdmins";
 import ManageClients from "../pages/ManageClients";
 import Reports from "../pages/Reports";
+import TransactionLogs from "../pages/TransactionLogs";
 import NotFound from "../pages/NotFound";
 import AdminLogin from "../pages/AdminLogin";
 
@@ -183,6 +184,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute roles={["super-admin"]}>
             <Reports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/transaction-logs"
+        element={
+          <ProtectedRoute roles={["super-admin"]}>
+            <TransactionLogs />
           </ProtectedRoute>
         }
       />

@@ -15,7 +15,7 @@ const PaymentConfirmationModal = ({
   const [expiryDate, setExpiryDate] = useState("12/25");
   const [cvv, setCvv] = useState("123");
   const [cardName, setCardName] = useState("Demo User");
-  const [phoneNumber, setPhoneNumber] = useState("+254712345678");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [formError, setFormError] = useState("");
 
   const formatPrice = (price, currency = "USD") => {

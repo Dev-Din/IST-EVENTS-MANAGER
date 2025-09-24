@@ -82,15 +82,21 @@ const Purchase = () => {
       setPaymentStatus("pending");
 
       const token = localStorage.getItem("token");
+
+      const requestPayload = {
+        eventId: eventId,
+        quantity: quantity,
+        phoneNumber: phoneNumber.trim(), // Remove any whitespace
+      };
+
+      console.log("🚀 Frontend M-Pesa Payment Request:", requestPayload);
+      console.log("🔑 Token:", token ? "Present" : "Missing");
+
       const response = await axios.post(
         `${
           process.env.REACT_APP_API_URL || "http://localhost:5000/api"
         }/payments/mpesa/initiate`,
-        {
-          eventId: eventId,
-          quantity: quantity,
-          phoneNumber: phoneNumber,
-        },
+        requestPayload,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -99,17 +105,27 @@ const Purchase = () => {
         }
       );
 
+      console.log("✅ Frontend M-Pesa Response:", response.data);
       setMpesaPayment(response.data.data);
       setShowPaymentModal(false);
 
       // Start polling for payment status
       pollPaymentStatus(response.data.data.checkoutRequestID);
     } catch (error) {
-      console.error("Error initiating M-Pesa payment:", error);
-      setError(
-        error.response?.data?.message ||
-          "Failed to initiate M-Pesa payment. Please try again."
-      );
+      console.error("❌ Frontend M-Pesa Error:", error);
+      console.error("❌ Error Response:", error.response?.data);
+
+      // Handle rate limiting specifically
+      if (error.response?.data?.message?.includes("System is busy")) {
+        setError(
+          "M-Pesa system is currently busy. Please wait 5-10 minutes and try again, or use a different phone number."
+        );
+      } else {
+        setError(
+          error.response?.data?.message ||
+            "Failed to initiate M-Pesa payment. Please try again."
+        );
+      }
       setPaymentStatus("failed");
     } finally {
       setPurchasing(false);

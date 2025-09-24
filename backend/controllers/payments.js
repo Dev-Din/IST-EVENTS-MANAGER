@@ -1,6 +1,7 @@
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
 const mpesaService = require("../utils/mpesaService");
+const TransactionLogger = require("../utils/transactionLogger");
 const Ticket = require("../models/Ticket");
 const Transaction = require("../models/Transaction");
 const Event = require("../models/Event");
@@ -8,6 +9,9 @@ const User = require("../models/User");
 
 // Use real M-Pesa service with provided credentials
 const currentMpesaService = mpesaService;
+
+// Initialize transaction logger
+const transactionLogger = new TransactionLogger();
 
 // Mock callback simulation for sandbox testing
 const simulateSuccessfulCallback = async (checkoutRequestID, transactionId) => {
@@ -70,6 +74,12 @@ const simulateSuccessfulCallback = async (checkoutRequestID, transactionId) => {
 const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
   const { eventId, quantity, phoneNumber } = req.body;
   const userId = req.user?.id || "507f1f77bcf86cd799439011"; // Use test user ID if no auth
+
+  console.log("🚀 Frontend Payment Request Received:");
+  console.log("📱 Phone Number:", phoneNumber);
+  console.log("🎫 Event ID:", eventId);
+  console.log("🔢 Quantity:", quantity);
+  console.log("👤 User ID:", userId);
 
   // Validate required fields
   if (!eventId || !quantity || !phoneNumber) {
@@ -143,7 +153,24 @@ const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
       transactionDesc: transactionDesc,
     });
 
-    // Initiate STK Push
+    // Check if M-Pesa service is ready
+    if (!mpesaService.isReady()) {
+      console.log("⏳ M-Pesa service not ready, waiting...");
+      const isReady = await mpesaService.waitForReady(10000); // 10 second timeout
+      if (!isReady) {
+        await Ticket.findByIdAndDelete(ticket._id);
+        await Transaction.findByIdAndDelete(transaction._id);
+        return next(
+          new ErrorResponse(
+            "M-Pesa service is currently unavailable. Please try again in a moment.",
+            503
+          )
+        );
+      }
+    }
+
+    // Initiate STK Push with improved error handling
+    console.log(`🚀 Initiating M-Pesa payment for ${phoneNumber}`);
     const stkResult = await mpesaService.initiateSTKPush(
       phoneNumber,
       testAmount,
@@ -152,13 +179,14 @@ const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
     );
 
     if (!stkResult.success) {
+      console.error(`❌ STK Push failed: ${stkResult.error}`);
       // Delete the pending ticket and transaction if STK Push fails
       await Ticket.findByIdAndDelete(ticket._id);
       await Transaction.findByIdAndDelete(transaction._id);
       return next(
         new ErrorResponse(
           `M-Pesa payment initiation failed: ${stkResult.error}`,
-          400
+          500
         )
       );
     }
@@ -177,6 +205,22 @@ const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
       amount: testAmount,
       phoneNumber: phoneNumber,
       ticketId: ticket._id,
+    });
+
+    // Log to JSON file
+    transactionLogger.logTransaction("STK_PUSH_INITIATED", {
+      checkoutRequestID: stkResult.checkoutRequestID,
+      merchantRequestID: stkResult.merchantRequestID,
+      amount: testAmount,
+      phoneNumber: phoneNumber,
+      ticketId: ticket._id,
+      transactionId: transaction._id,
+      eventId: eventId,
+      accountReference: accountReference,
+      responseCode: stkResult.responseCode,
+      responseDescription: stkResult.responseDescription,
+      customerMessage: stkResult.customerMessage,
+      status: "initiated",
     });
 
     // Mock callback disabled for real STK Push testing
@@ -294,6 +338,24 @@ const handleMpesaCallback = asyncHandler(async (req, res, next) => {
       success: callbackResult.success,
       resultCode: callbackResult.resultCode,
       resultDesc: callbackResult.resultDesc,
+    });
+
+    // Log to JSON file
+    const logType = callbackResult.success
+      ? "PAYMENT_COMPLETED"
+      : "PAYMENT_FAILED";
+    transactionLogger.logTransaction(logType, {
+      checkoutRequestID: callbackResult.checkoutRequestID,
+      merchantRequestID: callbackResult.merchantRequestID,
+      resultCode: callbackResult.resultCode,
+      resultDesc: callbackResult.resultDesc,
+      mpesaReceiptNumber: callbackResult.mpesaReceiptNumber,
+      amount: callbackResult.amount,
+      phoneNumber: callbackResult.phoneNumber,
+      transactionId: transaction._id,
+      ticketId: transaction.ticket?._id,
+      status: callbackResult.success ? "completed" : "failed",
+      rawCallbackData: req.body,
     });
 
     // Always respond with success to M-Pesa
@@ -551,6 +613,73 @@ const getTransactionHistory = asyncHandler(async (req, res, next) => {
   }
 });
 
+// Get all transaction logs in JSON format
+const getTransactionLogs = asyncHandler(async (req, res, next) => {
+  const logs = transactionLogger.getTransactionLogs();
+
+  if (!logs) {
+    return next(new ErrorResponse("Failed to retrieve transaction logs", 500));
+  }
+
+  res.json({
+    success: true,
+    data: logs,
+  });
+});
+
+// Get transaction logs summary
+const getTransactionSummary = asyncHandler(async (req, res, next) => {
+  const summary = transactionLogger.generateSummary();
+
+  if (!summary) {
+    return next(
+      new ErrorResponse("Failed to generate transaction summary", 500)
+    );
+  }
+
+  res.json({
+    success: true,
+    data: summary,
+  });
+});
+
+// Get transactions by phone number
+const getTransactionsByPhone = asyncHandler(async (req, res, next) => {
+  const { phoneNumber } = req.params;
+
+  if (!phoneNumber) {
+    return next(new ErrorResponse("Phone number is required", 400));
+  }
+
+  const transactions =
+    transactionLogger.getTransactionsByPhoneNumber(phoneNumber);
+
+  res.json({
+    success: true,
+    count: transactions.length,
+    phoneNumber: phoneNumber,
+    data: transactions,
+  });
+});
+
+// Get transactions by status
+const getTransactionsByStatus = asyncHandler(async (req, res, next) => {
+  const { status } = req.params;
+
+  if (!status) {
+    return next(new ErrorResponse("Status is required", 400));
+  }
+
+  const transactions = transactionLogger.getTransactionsByStatus(status);
+
+  res.json({
+    success: true,
+    count: transactions.length,
+    status: status,
+    data: transactions,
+  });
+});
+
 // @desc    Test STK Push with user-provided phone number
 // @route   POST /api/payments/mpesa/test-stk
 // @access  Public (for testing)
@@ -642,6 +771,22 @@ const testSTKPush = asyncHandler(async (req, res, next) => {
 
     console.log("💳 Transaction created:", transaction._id);
 
+    // Check if M-Pesa service is ready
+    if (!currentMpesaService.isReady()) {
+      console.log("⏳ M-Pesa service not ready, waiting...");
+      const isReady = await currentMpesaService.waitForReady(10000);
+      if (!isReady) {
+        await Ticket.findByIdAndDelete(ticket._id);
+        await Transaction.findByIdAndDelete(transaction._id);
+        return next(
+          new ErrorResponse(
+            "M-Pesa service is currently unavailable. Please try again in a moment.",
+            503
+          )
+        );
+      }
+    }
+
     // Test M-Pesa connection first
     console.log("🔗 Testing M-Pesa connection...");
     const connectionTest = await currentMpesaService.testConnection();
@@ -659,8 +804,8 @@ const testSTKPush = asyncHandler(async (req, res, next) => {
       );
     }
 
-    // Initiate STK Push
-    console.log("📱 Initiating STK Push...");
+    // Initiate STK Push with improved error handling
+    console.log(`📱 Initiating STK Push to ${phoneNumber}...`);
     const stkResult = await currentMpesaService.initiateSTKPush(
       phoneNumber,
       testAmount,
@@ -696,6 +841,22 @@ const testSTKPush = asyncHandler(async (req, res, next) => {
       phoneNumber: phoneNumber,
       ticketId: ticket._id,
       transactionId: transaction._id,
+    });
+
+    // Log to JSON file
+    transactionLogger.logTransaction("STK_PUSH_INITIATED", {
+      checkoutRequestID: stkResult.checkoutRequestID,
+      merchantRequestID: stkResult.merchantRequestID,
+      amount: testAmount,
+      phoneNumber: phoneNumber,
+      ticketId: ticket._id,
+      transactionId: transaction._id,
+      eventId: eventId,
+      accountReference: accountReference,
+      responseCode: stkResult.responseCode,
+      responseDescription: stkResult.responseDescription,
+      customerMessage: stkResult.customerMessage,
+      status: "initiated",
     });
 
     // Mock callback disabled for real STK Push testing
@@ -734,5 +895,9 @@ module.exports = {
   testMpesaConnection,
   getTransactionDetails,
   getTransactionHistory,
+  getTransactionLogs,
+  getTransactionSummary,
+  getTransactionsByPhone,
+  getTransactionsByStatus,
   testSTKPush,
 };

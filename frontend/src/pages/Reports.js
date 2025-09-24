@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import { adminAPI } from "../services/api";
@@ -6,6 +7,7 @@ import "./Reports.css";
 
 const Reports = () => {
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [overviewData, setOverviewData] = useState({
     summary: { totalRevenue: 0, totalTickets: 0 },
     eventsByCategory: [],
@@ -258,6 +260,23 @@ const Reports = () => {
               <span className="card-trend positive">
                 <i className="fas fa-arrow-up"></i>
                 {overviewData.summary.newUsers || 0} new
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="overview-card clickable"
+            onClick={() => navigate("/admin/transaction-logs")}
+          >
+            <div className="card-icon transactions">
+              <i className="fas fa-receipt"></i>
+            </div>
+            <div className="card-content">
+              <h3>View</h3>
+              <p>Transaction Logs</p>
+              <span className="card-trend positive">
+                <i className="fas fa-external-link-alt"></i>
+                M-Pesa Payments
               </span>
             </div>
           </div>

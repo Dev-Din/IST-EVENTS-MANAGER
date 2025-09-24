@@ -8,6 +8,10 @@ const {
   testMpesaConnection,
   getTransactionDetails,
   getTransactionHistory,
+  getTransactionLogs,
+  getTransactionSummary,
+  getTransactionsByPhone,
+  getTransactionsByStatus,
   testSTKPush,
 } = require("../controllers/payments");
 const { protect } = require("../middleware/auth");
@@ -22,6 +26,12 @@ router.get("/mpesa/test", testMpesaConnection); // Temporarily remove auth for t
 // Transaction routes
 router.get("/transaction/:transactionId", protect, getTransactionDetails);
 router.get("/transactions", protect, getTransactionHistory);
+
+// Transaction logs routes (for viewing JSON logs)
+router.get("/logs", getTransactionLogs); // Public route for viewing transaction logs
+router.get("/logs/summary", getTransactionSummary); // Public route for transaction summary
+router.get("/logs/phone/:phoneNumber", getTransactionsByPhone); // Public route for transactions by phone
+router.get("/logs/status/:status", getTransactionsByStatus); // Public route for transactions by status
 
 // Payment history (legacy)
 router.get("/history", protect, getPaymentHistory);

@@ -13,9 +13,45 @@ class MpesaService {
     this.callbackURL = process.env.MPESA_CALLBACK_URL;
     this.accessToken = null;
     this.tokenExpiry = null;
+    this.isInitialized = false;
 
     // Validate required environment variables
     this.validateConfig();
+
+    // Pre-warm the access token
+    this.initialize();
+  }
+
+  // Initialize and pre-warm access token
+  async initialize() {
+    try {
+      console.log("🔄 Initializing M-Pesa service...");
+      await this.getAccessToken();
+      this.isInitialized = true;
+      console.log("✅ M-Pesa service initialized successfully");
+    } catch (error) {
+      console.error("❌ Failed to initialize M-Pesa service:", error.message);
+      this.isInitialized = false;
+    }
+  }
+
+  // Check if service is ready
+  isReady() {
+    return (
+      this.isInitialized &&
+      this.accessToken &&
+      this.tokenExpiry &&
+      Date.now() < this.tokenExpiry
+    );
+  }
+
+  // Wait for service to be ready
+  async waitForReady(timeout = 10000) {
+    const startTime = Date.now();
+    while (!this.isReady() && Date.now() - startTime < timeout) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return this.isReady();
   }
 
   validateConfig() {
@@ -35,8 +71,8 @@ class MpesaService {
     }
   }
 
-  // Generate access token
-  async getAccessToken() {
+  // Generate access token with retry logic and better error handling
+  async getAccessToken(retryCount = 0) {
     try {
       // Check if we have a valid token
       if (
@@ -58,19 +94,40 @@ class MpesaService {
             Authorization: `Basic ${auth}`,
             "Content-Type": "application/json",
           },
+          timeout: 10000, // 10 second timeout
         }
       );
 
       this.accessToken = response.data.access_token;
       this.tokenExpiry = Date.now() + response.data.expires_in * 1000 - 60000; // 1 minute buffer
 
+      console.log("✅ M-Pesa access token refreshed successfully");
       return this.accessToken;
     } catch (error) {
       console.error(
-        "Error getting M-Pesa access token:",
+        "❌ Error getting access token:",
         error.response?.data || error.message
       );
-      throw new Error("Failed to get M-Pesa access token");
+
+      // Retry logic for network issues
+      if (
+        retryCount < 2 &&
+        (error.code === "ECONNRESET" || error.code === "ETIMEDOUT")
+      ) {
+        console.log(
+          `🔄 Retrying access token request (attempt ${retryCount + 1})`
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * (retryCount + 1))
+        ); // Exponential backoff
+        return this.getAccessToken(retryCount + 1);
+      }
+
+      throw new Error(
+        `Failed to get M-Pesa access token: ${
+          error.response?.data?.errorMessage || error.message
+        }`
+      );
     }
   }
 
@@ -86,12 +143,13 @@ class MpesaService {
     return { password, timestamp };
   }
 
-  // Initiate STK Push (Lip na M-Pesa Online)
+  // Initiate STK Push (Lip na M-Pesa Online) with retry logic
   async initiateSTKPush(
     phoneNumber,
     amount,
     accountReference,
-    transactionDesc
+    transactionDesc,
+    retryCount = 0
   ) {
     try {
       const accessToken = await this.getAccessToken();
@@ -114,6 +172,10 @@ class MpesaService {
         TransactionDesc: transactionDesc,
       };
 
+      console.log(
+        `📱 Initiating STK Push to ${formattedPhone} for KES ${amount}`
+      );
+
       const response = await axios.post(
         `${this.baseURL}/mpesa/stkpush/v1/processrequest`,
         stkPushData,
@@ -122,7 +184,12 @@ class MpesaService {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
           },
+          timeout: 15000, // 15 second timeout
         }
+      );
+
+      console.log(
+        `✅ STK Push initiated successfully: ${response.data.ResponseDescription}`
       );
 
       return {
@@ -135,12 +202,56 @@ class MpesaService {
       };
     } catch (error) {
       console.error(
-        "Error initiating STK Push:",
+        "❌ STK Push error:",
         error.response?.data || error.message
       );
+
+      // Retry logic for network issues or temporary failures
+      if (
+        retryCount < 2 &&
+        (error.code === "ECONNRESET" ||
+          error.code === "ETIMEDOUT" ||
+          error.response?.status === 500 ||
+          error.response?.status === 502 ||
+          error.response?.status === 503)
+      ) {
+        console.log(`🔄 Retrying STK Push (attempt ${retryCount + 1})`);
+        await new Promise((resolve) =>
+          setTimeout(resolve, 2000 * (retryCount + 1))
+        ); // Exponential backoff
+        return this.initiateSTKPush(
+          phoneNumber,
+          amount,
+          accountReference,
+          transactionDesc,
+          retryCount + 1
+        );
+      }
+
+      // Handle M-Pesa specific rate limiting errors
+      if (error.response?.data?.errorCode === "500.003.02") {
+        console.log(
+          "⚠️ M-Pesa rate limit exceeded - please wait a few minutes"
+        );
+        return {
+          success: false,
+          error:
+            "M-Pesa system is busy. Please wait 5-10 minutes and try again.",
+          errorCode: "500.003.02",
+          errorMessage: "Rate limit exceeded",
+          retryAfter: 300, // 5 minutes
+        };
+      }
+
+      // Handle specific M-Pesa errors
+      const errorMessage = error.response?.data?.errorMessage || error.message;
+      const errorCode = error.response?.data?.errorCode || error.code;
+
       return {
         success: false,
-        error: error.response?.data?.errorMessage || error.message,
+        error: `STK Push failed: ${errorMessage} (Code: ${errorCode})`,
+        errorCode: errorCode,
+        errorMessage: errorMessage,
       };
     }
   }
