@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
 import "./PaymentConfirmationModal.css";
 
@@ -15,9 +15,17 @@ const PaymentConfirmationModal = ({
   const [cardNumber, setCardNumber] = useState("4111 1111 1111 1111");
   const [expiryDate, setExpiryDate] = useState("12/25");
   const [cvv, setCvv] = useState("123");
-  const [cardName, setCardName] = useState("Demo User");
+  const [cardName, setCardName] = useState("Card Holder");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [formError, setFormError] = useState("");
+  const [stkPushSent, setStkPushSent] = useState(false);
+
+  // Reset STK push status when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setStkPushSent(false);
+    }
+  }, [isOpen]);
 
   const formatPrice = (price, currency = "USD") => {
     return new Intl.NumberFormat("en-US", {
@@ -27,13 +35,13 @@ const PaymentConfirmationModal = ({
   };
 
   const calculateTotal = () => {
-    // For M-Pesa testing, always return KES 1 regardless of event price
-    return 1;
+    // Calculate real ticket amount for display
+    return event.price * quantity;
   };
 
   const calculateProcessingFee = () => {
-    // No processing fee for M-Pesa testing
-    return 0;
+    // Constant processing fee of 1.50 in the event's currency
+    return 1.5;
   };
 
   const calculateGrandTotal = () => {
@@ -64,6 +72,7 @@ const PaymentConfirmationModal = ({
 
       // Call M-Pesa payment function
       if (onMpesaPayment) {
+        setStkPushSent(true);
         onMpesaPayment(phoneNumber);
       }
       return;
@@ -72,8 +81,7 @@ const PaymentConfirmationModal = ({
     const paymentDetails = {
       method: paymentMethod,
       transactionId: `TXN-${Date.now()}`,
-      paymentProcessor:
-        paymentMethod === "mpesa" ? "M-PESA" : "Demo Payment Gateway",
+      paymentProcessor: paymentMethod === "mpesa" ? "M-PESA" : "Card Payment",
       currency: paymentMethod === "mpesa" ? "KES" : event.currency || "USD",
     };
 
@@ -357,15 +365,6 @@ const PaymentConfirmationModal = ({
 
         {/* Security Notice */}
         <div className="security-notice">
-          <div className="demo-notice">
-            <i className="fas fa-info-circle"></i>
-            <div>
-              <strong>Demo Mode:</strong> This is a demonstration. No actual
-              payment will be processed. You can use any card details for
-              testing.
-            </div>
-          </div>
-
           <div className="security-features">
             <div className="security-item">
               <i className="fas fa-shield-alt"></i>
@@ -402,22 +401,34 @@ const PaymentConfirmationModal = ({
           </button>
 
           <button
-            className="btn btn-primary btn-full btn-lg"
+            className={`btn btn-primary btn-full btn-lg ${
+              stkPushSent ? "stk-push-sent" : ""
+            }`}
             onClick={handleConfirmPayment}
-            disabled={loading}
+            disabled={loading || stkPushSent}
           >
             {loading ? (
               <>
                 <i className="fas fa-spinner fa-spin"></i>
                 Processing Payment...
               </>
+            ) : stkPushSent ? (
+              <>
+                <i className="fas fa-mobile-alt"></i>
+                STK Push Sent! Check Your Phone
+              </>
             ) : (
               <>
                 <i className="fas fa-check-circle"></i>
                 {paymentMethod === "mpesa"
-                  ? "Pay with M-PESA"
-                  : "Confirm Payment"}{" "}
-                - {formatPrice(calculateGrandTotal(), event?.currency)}
+                  ? `Pay with M-PESA - ${formatPrice(
+                      calculateGrandTotal(),
+                      event?.currency
+                    )}`
+                  : `Confirm Payment - ${formatPrice(
+                      calculateGrandTotal(),
+                      event?.currency
+                    )}`}
               </>
             )}
           </button>

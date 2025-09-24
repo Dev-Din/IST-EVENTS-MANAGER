@@ -201,6 +201,24 @@
   box-shadow: var(--shadow-md);
 }
 
+/* STK Push Sent State */
+.btn:disabled.stk-push-sent {
+  background: linear-gradient(135deg, #27ae60, #229954);
+  color: white;
+  cursor: not-allowed;
+  opacity: 0.9;
+}
+
+.btn:disabled.stk-push-sent:hover {
+  transform: none;
+  box-shadow: var(--shadow-md);
+}
+
+.btn:disabled.stk-push-sent i {
+  color: #2ecc71;
+  margin-right: 8px;
+}
+
 /* M-PESA Logo Styles */
 .mpesa-logo {
   width: 24px;
@@ -361,26 +379,121 @@
   gap: var(--spacing-lg);
 }
 
-.demo-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
+/* Order Summary */
+.order-summary {
+  background: #f8f9fa;
   border-radius: var(--border-radius);
-  border: 1px solid #f59e0b;
+  padding: var(--spacing-lg);
+  margin: var(--spacing-lg) 0;
+  border: 1px solid #e9ecef;
 }
 
-.demo-notice i {
-  color: #d97706;
+.order-summary h4 {
+  margin: 0 0 var(--spacing-md) 0;
+  color: #2c3e50;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.event-details {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid #e9ecef;
+}
+
+.event-title {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: #2c3e50;
   font-size: var(--font-size-lg);
-  margin-top: 2px;
+  font-weight: 600;
 }
 
-.demo-notice div {
-  color: #92400e;
+.event-datetime,
+.event-location {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+  color: #6c757d;
   font-size: var(--font-size-sm);
-  line-height: 1.5;
+}
+
+.event-datetime i,
+.event-location i {
+  color: #3498db;
+  width: 16px;
+}
+
+.order-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+}
+
+.order-item.total {
+  font-weight: 600;
+  font-size: var(--font-size-md);
+  color: #2c3e50;
+  border-top: 2px solid #e9ecef;
+  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+}
+
+.item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-price {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: var(--font-size-sm);
+}
+
+.item-quantity {
+  color: #6c757d;
+  font-size: var(--font-size-xs);
+}
+
+.item-label {
+  color: #6c757d;
+  font-size: var(--font-size-sm);
+}
+
+.item-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.quantity-text {
+  color: #6c757d;
+  font-size: var(--font-size-xs);
+}
+
+.total-price {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: var(--font-size-sm);
+}
+
+.order-item.total .total-price {
+  font-size: var(--font-size-md);
+}
+
+.order-divider {
+  height: 1px;
+  background: #e9ecef;
+  margin: var(--spacing-xs) 0;
 }
 
 .security-features {

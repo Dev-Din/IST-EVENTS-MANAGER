@@ -282,19 +282,26 @@ const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse("Not enough tickets available", 400));
     }
 
-    // Calculate total price (always KES 1 for testing)
+    // Calculate real ticket amounts for storage
+    const ticketPrice = event.price * quantity;
+    const processingFee = 1.5;
+    const realTotalPrice = ticketPrice + processingFee;
+
+    // M-Pesa testing amount (always KES 1 for testing)
     const testAmount = 1;
-    const totalPrice = testAmount;
 
     // Validate amount
     mpesaService.validateAmount(testAmount);
 
-    // Create pending ticket
+    // Create pending ticket with real amounts but test payment
     const ticket = await Ticket.create({
       event: eventId,
       user: userId,
       quantity: quantity,
-      totalPrice: totalPrice,
+      ticketPrice: ticketPrice,
+      processingFee: processingFee,
+      totalPrice: realTotalPrice, // Real total for record keeping
+      testAmount: testAmount, // Amount actually charged for testing
       status: "pending",
       paymentMethod: "mobile_money",
       paymentStatus: "pending",

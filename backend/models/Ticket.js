@@ -23,10 +23,26 @@ const TicketSchema = new mongoose.Schema(
       min: [1, "Quantity must be at least 1"],
       max: [10, "Maximum 10 tickets per purchase"],
     },
+    ticketPrice: {
+      type: Number,
+      required: [true, "Ticket price is required"],
+      min: [0, "Ticket price cannot be negative"],
+    },
+    processingFee: {
+      type: Number,
+      required: [true, "Processing fee is required"],
+      min: [0, "Processing fee cannot be negative"],
+      default: 1.5,
+    },
     totalPrice: {
       type: Number,
       required: [true, "Total price is required"],
       min: [0, "Total price cannot be negative"],
+    },
+    testAmount: {
+      type: Number,
+      required: false, // Only for testing purposes
+      min: [0, "Test amount cannot be negative"],
     },
     status: {
       type: String,

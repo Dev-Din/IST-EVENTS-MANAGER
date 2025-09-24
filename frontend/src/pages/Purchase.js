@@ -105,7 +105,7 @@ const Purchase = () => {
   };
 
   const calculateProcessingFee = () => {
-    // Fixed processing fee: 1.5 for all currencies
+    // Constant processing fee: 1.50 for all currencies
     return 1.5;
   };
 
@@ -678,7 +678,7 @@ const Purchase = () => {
               <h3>Payment Method</h3>
               <div className="payment-info">
                 <i className="fas fa-credit-card"></i>
-                <span>Demo Payment (No actual payment required)</span>
+                <span>M-Pesa Payment</span>
               </div>
             </div>
 
