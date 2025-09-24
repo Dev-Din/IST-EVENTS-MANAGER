@@ -3,16 +3,36 @@ const crypto = require("crypto");
 
 class MpesaService {
   constructor() {
-    this.baseURL = "https://sandbox.safaricom.co.ke";
+    this.baseURL =
+      process.env.MPESA_BASE_URL?.split("/oauth")[0] ||
+      "https://sandbox.safaricom.co.ke";
     this.consumerKey = process.env.MPESA_CONSUMER_KEY;
     this.consumerSecret = process.env.MPESA_CONSUMER_SECRET;
     this.passkey = process.env.MPESA_PASSKEY;
     this.shortcode = process.env.MPESA_SHORTCODE;
-    this.callbackURL =
-      process.env.MPESA_CALLBACK_URL ||
-      `${process.env.BACKEND_URL}/api/payments/mpesa/callback`;
+    this.callbackURL = process.env.MPESA_CALLBACK_URL;
     this.accessToken = null;
     this.tokenExpiry = null;
+
+    // Validate required environment variables
+    this.validateConfig();
+  }
+
+  validateConfig() {
+    const required = [
+      "consumerKey",
+      "consumerSecret",
+      "passkey",
+      "shortcode",
+      "callbackURL",
+    ];
+    const missing = required.filter((key) => !this[key]);
+
+    if (missing.length > 0) {
+      throw new Error(
+        `Missing required M-Pesa configuration: ${missing.join(", ")}`
+      );
+    }
   }
 
   // Generate access token
@@ -195,6 +215,8 @@ class MpesaService {
           mpesaReceiptNumber: metadata.MpesaReceiptNumber,
           transactionDate: metadata.TransactionDate,
           phoneNumber: metadata.PhoneNumber,
+          accountReference:
+            metadata.AccountReference || stkCallback.CheckoutRequestID,
         };
       } else {
         // Payment failed
@@ -204,6 +226,7 @@ class MpesaService {
           checkoutRequestID: stkCallback.CheckoutRequestID,
           resultCode: stkCallback.ResultCode,
           resultDesc: stkCallback.ResultDesc,
+          accountReference: stkCallback.CheckoutRequestID,
         };
       }
     } catch (error) {
@@ -239,6 +262,89 @@ class MpesaService {
     throw new Error(
       "Invalid M-Pesa phone number format. Must be 2547XXXXXXXX (e.g., 254712345678)"
     );
+  }
+
+  // Test M-Pesa connection
+  async testConnection() {
+    try {
+      const token = await this.getAccessToken();
+      return {
+        success: true,
+        message: "M-Pesa connection successful",
+        token: token ? "Valid" : "Invalid",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: "M-Pesa connection failed",
+        error: error.message,
+      };
+    }
+  }
+
+  // Get transaction status with retry logic
+  async getTransactionStatus(checkoutRequestID, maxRetries = 3) {
+    let attempts = 0;
+
+    while (attempts < maxRetries) {
+      try {
+        const result = await this.querySTKPushStatus(checkoutRequestID);
+        if (result.success) {
+          return result;
+        }
+        attempts++;
+
+        if (attempts < maxRetries) {
+          // Wait before retry (exponential backoff)
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.pow(2, attempts) * 1000)
+          );
+        }
+      } catch (error) {
+        attempts++;
+        if (attempts >= maxRetries) {
+          throw error;
+        }
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, attempts) * 1000)
+        );
+      }
+    }
+
+    throw new Error(
+      `Failed to get transaction status after ${maxRetries} attempts`
+    );
+  }
+
+  // Validate transaction amount
+  validateAmount(amount) {
+    if (typeof amount !== "number" || amount <= 0) {
+      throw new Error("Amount must be a positive number");
+    }
+
+    if (amount < 1) {
+      throw new Error("Minimum transaction amount is 1 KES");
+    }
+
+    if (amount > 70000) {
+      throw new Error("Maximum transaction amount is 70,000 KES");
+    }
+
+    return true;
+  }
+
+  // Generate unique account reference
+  generateAccountReference(prefix = "TKT") {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substr(2, 9).toUpperCase();
+    return `${prefix}-${timestamp}-${random}`;
+  }
+
+  // Log transaction for debugging
+  logTransaction(action, data) {
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[M-Pesa ${action}]`, JSON.stringify(data, null, 2));
+    }
   }
 }
 
