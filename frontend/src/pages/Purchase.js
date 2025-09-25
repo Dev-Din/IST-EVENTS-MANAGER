@@ -332,10 +332,19 @@ const Purchase = () => {
       setPurchasing(true);
       setError("");
 
+      // Map frontend payment methods to backend payment methods
+      const paymentMethodMap = {
+        credit_card: "credit_card",
+        debit_card: "debit_card",
+        paypal: "paypal",
+        mpesa: "mobile_money",
+      };
+
       const purchaseData = {
         eventId: eventId,
         quantity: quantity,
-        paymentMethod: "mobile_money", // M-PESA is a mobile money service
+        paymentMethod:
+          paymentMethodMap[paymentDetails.method] || "mobile_money",
       };
 
       const response = await ticketsAPI.purchase(purchaseData);

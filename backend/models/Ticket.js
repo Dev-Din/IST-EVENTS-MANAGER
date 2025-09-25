@@ -51,7 +51,15 @@ const TicketSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["card", "mobile_money", "bank_transfer", "cash"],
+      enum: [
+        "card",
+        "mobile_money",
+        "bank_transfer",
+        "cash",
+        "credit_card",
+        "debit_card",
+        "paypal",
+      ],
       required: [true, "Payment method is required"],
     },
     paymentStatus: {

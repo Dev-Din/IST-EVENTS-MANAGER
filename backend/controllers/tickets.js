@@ -39,14 +39,18 @@ const purchaseTickets = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Not enough tickets available", 400));
   }
 
-  // Calculate total price
-  const totalPrice = event.price * quantity;
+  // Calculate prices
+  const ticketPrice = event.price * quantity;
+  const processingFee = 1.5;
+  const totalPrice = ticketPrice + processingFee;
 
   // Create ticket
   const ticket = await Ticket.create({
     event: eventId,
     user: req.user.id,
     quantity,
+    ticketPrice,
+    processingFee,
     totalPrice,
     paymentMethod,
     status: "confirmed",

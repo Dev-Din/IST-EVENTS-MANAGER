@@ -6,7 +6,6 @@ const TransactionSchema = new mongoose.Schema(
     checkoutRequestID: {
       type: String,
       required: false, // Will be set after STK Push response
-      unique: true,
       trim: true,
     },
     merchantRequestID: {

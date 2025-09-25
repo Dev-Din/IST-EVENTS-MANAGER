@@ -418,7 +418,17 @@ const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
     });
   } catch (error) {
     console.error("Error initiating M-Pesa payment:", error);
-    return next(new ErrorResponse("Failed to initiate M-Pesa payment", 500));
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
+    return next(
+      new ErrorResponse(
+        `Failed to initiate M-Pesa payment: ${error.message}`,
+        500
+      )
+    );
   }
 });
 
@@ -1536,6 +1546,76 @@ const generateTransactionLogsCSV = (logs) => {
   return rows.join("\n");
 };
 
+// @desc    Manually simulate M-Pesa callback for testing
+// @route   POST /api/payments/mpesa/simulate-callback
+// @access  Private (for testing)
+const simulateMpesaCallback = asyncHandler(async (req, res, next) => {
+  const { accountReference, mpesaReceiptNumber } = req.body;
+
+  if (!accountReference) {
+    return next(new ErrorResponse("Account reference is required", 400));
+  }
+
+  try {
+    console.log(
+      `🔧 Manual M-Pesa callback simulation for: ${accountReference}`
+    );
+
+    // Find the transaction
+    const transaction = await Transaction.findOne({
+      accountReference,
+    }).populate("ticket user event");
+
+    if (!transaction) {
+      return next(new ErrorResponse("Transaction not found", 404));
+    }
+
+    if (transaction.status === "success") {
+      return res.json({
+        success: true,
+        message: "Payment already processed",
+        data: {
+          transactionId: transaction._id,
+          status: transaction.status,
+          mpesaReceiptNumber: transaction.mpesaReceiptNumber,
+        },
+      });
+    }
+
+    // Simulate successful callback data
+    const callbackData = {
+      success: true,
+      merchantRequestID: transaction.merchantRequestID,
+      checkoutRequestID: transaction.checkoutRequestID,
+      resultCode: 0,
+      resultDesc: "Success",
+      amount: transaction.amount,
+      mpesaReceiptNumber:
+        mpesaReceiptNumber || `TIPA${Date.now().toString().slice(-8)}`,
+      transactionDate: new Date().toISOString(),
+      phoneNumber: transaction.phoneNumber,
+      accountReference: transaction.accountReference,
+    };
+
+    // Process the callback using existing logic
+    await processTransactionCallback(transaction, callbackData, res);
+
+    res.json({
+      success: true,
+      message: "M-Pesa callback simulated successfully",
+      data: {
+        transactionId: transaction._id,
+        ticketId: transaction.ticket?._id,
+        status: "success",
+        mpesaReceiptNumber: callbackData.mpesaReceiptNumber,
+      },
+    });
+  } catch (error) {
+    console.error("Error simulating M-Pesa callback:", error);
+    return next(new ErrorResponse("Failed to simulate callback", 500));
+  }
+});
+
 module.exports = {
   initiateMpesaPayment,
   handleMpesaCallback,
@@ -1551,4 +1631,5 @@ module.exports = {
   testSTKPush,
   exportTransactionLogsPDF,
   exportTransactionLogsCSV,
+  simulateMpesaCallback,
 };
