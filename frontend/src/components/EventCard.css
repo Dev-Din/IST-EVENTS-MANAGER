@@ -85,6 +85,11 @@
   color: var(--white);
 }
 
+.status-expired {
+  background: var(--warning-color);
+  color: var(--white);
+}
+
 /* Event Details */
 .event-details {
   padding: var(--spacing-lg);
@@ -196,6 +201,42 @@
   font-size: var(--font-size-lg);
   z-index: 2;
   box-shadow: var(--shadow-lg);
+}
+
+/* Expired event styling */
+.event-card.expired {
+  opacity: 0.8;
+  position: relative;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid var(--gray-300);
+}
+
+.event-card.expired::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.event-card.expired .event-title {
+  color: var(--gray-600);
+}
+
+.event-card.expired .event-details {
+  color: var(--gray-500);
+}
+
+.event-card.expired .info-item {
+  color: var(--gray-500);
+}
+
+.event-card.expired .event-description {
+  color: var(--gray-500);
 }
 
 /* Responsive Design */

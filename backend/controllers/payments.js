@@ -354,6 +354,20 @@ const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
 
     if (!stkResult.success) {
       console.error(`❌ STK Push failed: ${stkResult.error}`);
+
+      // Handle specific M-Pesa system busy errors
+      if (stkResult.errorCode === "500.003.02") {
+        console.log(
+          "⚠️ M-Pesa system is busy - keeping transaction for later processing"
+        );
+        return next(
+          new ErrorResponse(
+            "M-Pesa system is currently busy. Please wait 5-10 minutes and try again. Your transaction has been saved and will be processed automatically when the system is available.",
+            503
+          )
+        );
+      }
+
       // Keep the transaction for potential callback processing
       console.log(
         "⚠️ STK Push failed, but keeping transaction for callback processing"

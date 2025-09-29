@@ -1,5 +1,6 @@
 const PDFDocument = require("pdfkit");
 const QRCode = require("qrcode");
+const EmailMasker = require("./emailMasker");
 
 class PDFTicketGenerator {
   constructor() {
@@ -153,7 +154,9 @@ class PDFTicketGenerator {
         doc
           .fontSize(12)
           .fillColor("#000000")
-          .text(user.email, leftColumnX, currentY + 15, { width: 200 });
+          .text(EmailMasker.maskEmail(user.email), leftColumnX, currentY + 15, {
+            width: 200,
+          });
 
         // Right Column Details
         currentY = detailsStartY;

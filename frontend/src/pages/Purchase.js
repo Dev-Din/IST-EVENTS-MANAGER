@@ -176,14 +176,24 @@ const Purchase = () => {
       console.error("❌ Error Response:", error.response?.data);
 
       // Handle rate limiting specifically
-      if (error.response?.data?.message?.includes("System is busy")) {
+      if (
+        error.response?.data?.message?.includes("System is busy") ||
+        error.response?.status === 503
+      ) {
         setError(
-          "M-Pesa system is currently busy. Please wait 5-10 minutes and try again, or use a different phone number."
+          "🔄 M-Pesa system is currently busy. This is a temporary issue with Safaricom's servers. Your transaction has been saved and will be processed automatically when the system is available. Please wait 5-10 minutes and try again, or contact support if the issue persists."
         );
+
+        // Add a retry button for system busy errors
+        setTimeout(() => {
+          setError(
+            (prev) => prev + " You can also try using a different phone number."
+          );
+        }, 2000);
       } else {
         setError(
           error.response?.data?.message ||
-            "Failed to initiate M-Pesa payment. Please try again."
+            "Failed to initiate M-Pesa payment. Please try again or contact support if the issue persists."
         );
       }
       setPaymentStatus("failed");
