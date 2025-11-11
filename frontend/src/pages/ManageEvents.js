@@ -133,7 +133,11 @@ const ManageEvents = () => {
       setEditingEvent(null);
     } catch (error) {
       console.error("Error saving event:", error);
-      alert("Failed to save event");
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to save event";
+      alert(errorMessage);
     }
   };
 

@@ -25,7 +25,9 @@ const getEvent = asyncHandler(async (req, res, next) => {
   );
 
   if (!event) {
-    return next(new ErrorResponse(`Event not found with id of ${req.params.id}`, 404));
+    return next(
+      new ErrorResponse(`Event not found with id of ${req.params.id}`, 404)
+    );
   }
 
   res.json({
@@ -60,12 +62,21 @@ const updateEvent = asyncHandler(async (req, res, next) => {
   let event = await Event.findById(req.params.id);
 
   if (!event) {
-    return next(new ErrorResponse(`Event not found with id of ${req.params.id}`, 404));
+    return next(
+      new ErrorResponse(`Event not found with id of ${req.params.id}`, 404)
+    );
   }
 
-  // Make sure user is event owner or admin
-  if (event.createdBy.toString() !== req.user.id && req.user.role !== "super-admin") {
-    return next(new ErrorResponse(`User ${req.user.id} is not authorized to update this event`, 401));
+  // Make sure user is event owner or admin (super-admin or sub-admin)
+  const isAdmin =
+    req.user.role === "super-admin" || req.user.role === "sub-admin";
+  if (event.createdBy.toString() !== req.user.id && !isAdmin) {
+    return next(
+      new ErrorResponse(
+        `User ${req.user.id} is not authorized to update this event`,
+        401
+      )
+    );
   }
 
   req.body.lastModifiedBy = req.user.id;
@@ -73,10 +84,32 @@ const updateEvent = asyncHandler(async (req, res, next) => {
   req.body.status = "published";
   req.body.publishedAt = new Date();
 
-  event = await Event.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  }).populate("createdBy", "username fullName");
+  // Convert date string to Date object if provided
+  if (req.body.date && typeof req.body.date === "string") {
+    req.body.date = new Date(req.body.date);
+  }
+
+  // Ensure description is not empty (required field)
+  if (
+    req.body.description !== undefined &&
+    req.body.description.trim() === ""
+  ) {
+    req.body.description = "No description provided";
+  }
+
+  // Update event fields
+  Object.keys(req.body).forEach((key) => {
+    if (req.body[key] !== undefined) {
+      event[key] = req.body[key];
+    }
+  });
+
+  // Save the event (this will run validators, but date validation is now conditional)
+  event = await event.save();
+  event = await Event.findById(event._id).populate(
+    "createdBy",
+    "username fullName"
+  );
 
   res.json({
     success: true,
@@ -91,12 +124,21 @@ const deleteEvent = asyncHandler(async (req, res, next) => {
   const event = await Event.findById(req.params.id);
 
   if (!event) {
-    return next(new ErrorResponse(`Event not found with id of ${req.params.id}`, 404));
+    return next(
+      new ErrorResponse(`Event not found with id of ${req.params.id}`, 404)
+    );
   }
 
-  // Make sure user is event owner or admin
-  if (event.createdBy.toString() !== req.user.id && req.user.role !== "super-admin") {
-    return next(new ErrorResponse(`User ${req.user.id} is not authorized to delete this event`, 401));
+  // Make sure user is event owner or admin (super-admin or sub-admin)
+  const isAdmin =
+    req.user.role === "super-admin" || req.user.role === "sub-admin";
+  if (event.createdBy.toString() !== req.user.id && !isAdmin) {
+    return next(
+      new ErrorResponse(
+        `User ${req.user.id} is not authorized to delete this event`,
+        401
+      )
+    );
   }
 
   await event.deleteOne();
