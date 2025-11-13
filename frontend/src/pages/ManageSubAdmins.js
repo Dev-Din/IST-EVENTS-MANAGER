@@ -267,8 +267,7 @@ const ManageSubAdmins = () => {
     <div className="manage-users-page">
       <div className="container">
         <div className="page-header">
-          <h1>Manage Sub-Admins</h1>
-          <p>Create and manage sub-administrator accounts</p>
+          <h1 className="creative-header">Manage Sub-Admins</h1>
         </div>
 
         <div className="actions-bar">

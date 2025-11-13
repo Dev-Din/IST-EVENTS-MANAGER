@@ -7,7 +7,27 @@
 
 .main-content {
   flex: 1;
-  margin-top: 70px; /* Account for fixed navbar */
+  margin-top: 0;
+  transition: margin-left 0.3s ease;
+}
+
+/* Sidebar Layout */
+.App.sidebar-layout {
+  display: flex;
+}
+
+.main-content.with-sidebar {
+  margin-left: 260px;
+  width: calc(100% - 260px);
+  min-height: 100vh;
+}
+
+/* Responsive Sidebar Layout */
+@media (max-width: 768px) {
+  .main-content.with-sidebar {
+    margin-left: 0;
+    width: 100%;
+  }
 }
 
 /* Error States */

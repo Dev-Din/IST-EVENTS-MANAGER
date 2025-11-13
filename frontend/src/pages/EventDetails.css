@@ -71,9 +71,9 @@
   position: relative;
   z-index: 3;
   width: 100%;
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 1rem;
 }
 
 /* Breadcrumb */
@@ -114,7 +114,7 @@
 /* Hero Content */
 .hero-content {
   text-align: center;
-  max-width: 800px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -162,9 +162,9 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 3rem;
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 1rem;
 }
 
 /* Event Details Section */
@@ -601,7 +601,7 @@
 
 .error-content {
   text-align: center;
-  max-width: 500px;
+  max-width: 100%;
 }
 
 .error-icon {

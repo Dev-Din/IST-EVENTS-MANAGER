@@ -138,14 +138,15 @@ a:hover {
 
 /* Layout Utilities */
 .container {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 0 var(--spacing-lg);
+  padding: 0 var(--spacing-md);
+  width: 100%;
 }
 
 @media (max-width: 768px) {
   .container {
-    padding: 0 var(--spacing-md);
+    padding: 0 var(--spacing-sm);
   }
 }
 

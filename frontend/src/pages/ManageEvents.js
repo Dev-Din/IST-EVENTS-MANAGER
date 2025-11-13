@@ -18,6 +18,7 @@ const ManageEvents = () => {
   const [editingEvent, setEditingEvent] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [viewingEvent, setViewingEvent] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -159,8 +160,7 @@ const ManageEvents = () => {
     <div className="manage-events-page">
       <div className="container">
         <div className="page-header">
-          <h1>Manage Events</h1>
-          <p>Create, edit, and manage all events in the system</p>
+          <h1 className="creative-header">Manage Events</h1>
         </div>
 
         <div className="actions-bar">
@@ -222,13 +222,6 @@ const ManageEvents = () => {
                           <td>
                             <div className="event-name-cell">
                               <strong>{event.title || "Untitled Event"}</strong>
-                              {event.description && (
-                                <span className="event-description">
-                                  {event.description.length > 50
-                                    ? `${event.description.substring(0, 50)}...`
-                                    : event.description}
-                                </span>
-                              )}
                             </div>
                           </td>
                           <td>
@@ -271,6 +264,13 @@ const ManageEvents = () => {
                           <td>
                             <div className="table-actions">
                               <button
+                                onClick={() => setViewingEvent(event)}
+                                className="btn btn-sm btn-outline"
+                                title="View Details"
+                              >
+                                <i className="fas fa-info-circle"></i>
+                              </button>
+                              <button
                                 onClick={() => handleEdit(event)}
                                 className="btn btn-sm btn-outline"
                                 title="Edit Event"
@@ -310,6 +310,85 @@ const ManageEvents = () => {
             )}
           </>
         )}
+
+        {/* Event Details Modal */}
+        <Modal
+          isOpen={viewingEvent !== null}
+          onClose={() => setViewingEvent(null)}
+          title={viewingEvent ? viewingEvent.title : "Event Details"}
+          size="medium"
+        >
+          {viewingEvent && (
+            <div className="event-details-view">
+              <div className="detail-section">
+                <h3>Description</h3>
+                <p>{viewingEvent.description || "No description provided."}</p>
+              </div>
+              <div className="detail-section">
+                <h3>Event Information</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <strong>Date & Time:</strong>
+                    <span>
+                      {viewingEvent.date
+                        ? `${formatDate(viewingEvent.date)} ${formatTime(viewingEvent.date)}`
+                        : "TBA"}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <strong>Location:</strong>
+                    <span>{viewingEvent.location || "TBA"}</span>
+                  </div>
+                  <div className="detail-item">
+                    <strong>Price:</strong>
+                    <span>
+                      {viewingEvent.currency && viewingEvent.price !== undefined
+                        ? `${viewingEvent.currency} ${parseFloat(viewingEvent.price).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}`
+                        : "Free"}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <strong>Capacity:</strong>
+                    <span>{viewingEvent.capacity || 0}</span>
+                  </div>
+                  <div className="detail-item">
+                    <strong>Available Tickets:</strong>
+                    <span>{viewingEvent.availableTickets || 0}</span>
+                  </div>
+                  <div className="detail-item">
+                    <strong>Category:</strong>
+                    <span>
+                      {viewingEvent.category
+                        ? viewingEvent.category.charAt(0).toUpperCase() + viewingEvent.category.slice(1)
+                        : "Other"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button
+                  onClick={() => {
+                    setViewingEvent(null);
+                    handleEdit(viewingEvent);
+                  }}
+                  className="btn btn-primary"
+                >
+                  <i className="fas fa-edit"></i>
+                  Edit Event
+                </button>
+                <button
+                  onClick={() => setViewingEvent(null)}
+                  className="btn btn-outline"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </Modal>
 
         {/* Event Form Modal */}
         <Modal

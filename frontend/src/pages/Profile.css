@@ -1,11 +1,11 @@
 .profile-page {
   min-height: 100vh;
   background: #f8fafc;
-  padding: 2rem 1rem;
+  padding: 1.5rem 1rem;
 }
 
 .profile-container {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
   background: white;
   border-radius: 12px;

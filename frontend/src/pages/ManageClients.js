@@ -129,16 +129,17 @@ const ManageClients = () => {
       const mimeType = format === "pdf" ? "application/pdf" : "text/csv";
 
       // Create download link
-      const blob = response.data instanceof Blob 
-        ? response.data 
-        : new Blob([response.data], { type: mimeType });
+      const blob =
+        response.data instanceof Blob
+          ? response.data
+          : new Blob([response.data], { type: mimeType });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", `clients-export.${fileExtension}`);
       document.body.appendChild(link);
       link.click();
-      
+
       setTimeout(() => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
@@ -159,13 +160,15 @@ const ManageClients = () => {
 
   const filteredClients = clients.filter((client) => {
     let matchesSearch = true;
-    
+
     // Real-time search filtering based on selected factor
     if (searchInput && searchInput.trim()) {
       const searchLower = searchInput.trim().toLowerCase();
       switch (searchBy) {
         case "clientId":
-          matchesSearch = (client.userId || "").toLowerCase().includes(searchLower);
+          matchesSearch = (client.userId || "")
+            .toLowerCase()
+            .includes(searchLower);
           break;
         case "client":
           matchesSearch =
@@ -219,8 +222,7 @@ const ManageClients = () => {
     <div className="manage-users-page">
       <div className="container">
         <div className="page-header">
-          <h1>Manage Clients</h1>
-          <p>View and manage client accounts and activity</p>
+          <h1 className="creative-header">Client Management</h1>
         </div>
 
         <div className="filters-bar">
@@ -350,7 +352,7 @@ const ManageClients = () => {
             <i className="fas fa-users"></i>
             <h3>No Clients Found</h3>
             <p>
-              {searchTerm
+              {searchInput || filterStatus !== "all"
                 ? "No clients match your search criteria."
                 : "No clients have registered yet."}
             </p>

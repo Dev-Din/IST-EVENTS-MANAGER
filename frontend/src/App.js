@@ -111,14 +111,21 @@ function App() {
   return (
     <AuthContext.Provider value={authValue}>
       <Router>
-        <div className="App">
-          <Navbar />
-          <main className="main-content">
-            <AppRoutes />
-          </main>
-        </div>
+        <AppContent />
       </Router>
     </AuthContext.Provider>
+  );
+}
+
+// Separate component to use useLocation hook
+function AppContent() {
+  return (
+    <div className="App sidebar-layout">
+      <Navbar />
+      <main className="main-content with-sidebar">
+        <AppRoutes />
+      </main>
+    </div>
   );
 }
 

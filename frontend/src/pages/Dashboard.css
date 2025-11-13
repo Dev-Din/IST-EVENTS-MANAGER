@@ -1,7 +1,12 @@
 /* Dashboard Pages Styles */
 .dashboard-page {
-  padding: var(--spacing-xl) 0;
+  padding: var(--spacing-lg) 0;
   min-height: calc(100vh - 70px);
+}
+
+.dashboard-page .container {
+  padding: 0 1rem;
+  max-width: 100%;
 }
 
 .dashboard-header {

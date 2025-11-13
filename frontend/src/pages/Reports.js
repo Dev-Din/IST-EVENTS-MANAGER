@@ -207,7 +207,7 @@ const Reports = () => {
     <div className="reports-page">
       <div className="container">
         <div className="page-header">
-          <h1>Reports & Analytics</h1>
+          <h1 className="creative-header">Reports & Analytics</h1>
           <p>Comprehensive insights into your event management system</p>
         </div>
 
