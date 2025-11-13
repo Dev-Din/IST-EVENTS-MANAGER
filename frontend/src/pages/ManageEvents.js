@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
-import EventCard from "../components/EventCard";
 import Loading from "../components/Loading";
 import Modal from "../components/Modal";
+import Pagination from "../components/Pagination";
 import { eventsAPI } from "../services/api";
 import {
   EVENT_CURRENCIES,
   DEFAULT_EVENT_CURRENCY,
 } from "../utils/eastAfricanCountries";
+import { formatDate, formatTime } from "../utils/dateFormatter";
 import "./ManageEvents.css";
 
 const ManageEvents = () => {
@@ -15,6 +16,8 @@ const ManageEvents = () => {
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -188,19 +191,124 @@ const ManageEvents = () => {
             </button>
           </div>
         ) : (
-          <div className="events-grid">
-            {events
-              .filter((event) => event && event._id) // Filter out undefined/null events
-              .map((event) => (
-                <EventCard
-                  key={event._id}
-                  event={event}
-                  showActions={true}
-                  onEdit={() => handleEdit(event)}
-                  onDelete={() => handleDelete(event._id)}
-                />
-              ))}
-          </div>
+          <>
+            <div className="events-table-container">
+              <table className="events-table">
+                <thead>
+                  <tr>
+                    <th>Event Name</th>
+                    <th>Date & Time</th>
+                    <th>Location</th>
+                    <th>Price</th>
+                    <th>Capacity</th>
+                    <th>Available</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events
+                    .filter((event) => event && event._id)
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((event) => {
+                      const eventDate = event.date ? new Date(event.date) : null;
+                      const isPast = eventDate && eventDate < new Date();
+                      const availableTickets = event.availableTickets !== undefined ? event.availableTickets : (event.capacity || 0);
+                      const isSoldOut = availableTickets === 0;
+                      
+                      return (
+                        <tr key={event._id}>
+                          <td>
+                            <div className="event-name-cell">
+                              <strong>{event.title || "Untitled Event"}</strong>
+                              {event.description && (
+                                <span className="event-description">
+                                  {event.description.length > 50
+                                    ? `${event.description.substring(0, 50)}...`
+                                    : event.description}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="event-date-cell">
+                              {eventDate ? (
+                                <>
+                                  <div>{formatDate(event.date)}</div>
+                                  <div className="event-time">{formatTime(event.date)}</div>
+                                </>
+                              ) : (
+                                <span className="text-muted">TBA</span>
+                              )}
+                            </div>
+                          </td>
+                          <td>{event.location || "TBA"}</td>
+                          <td>
+                            {event.currency && event.price !== undefined
+                              ? `${event.currency} ${parseFloat(event.price).toLocaleString("en-US", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}`
+                              : "Free"}
+                          </td>
+                          <td>{event.capacity || 0}</td>
+                          <td>
+                            <span className={isSoldOut ? "sold-out" : "available"}>
+                              {availableTickets}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="category-badge">
+                              {event.category ? event.category.charAt(0).toUpperCase() + event.category.slice(1) : "Other"}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`status-badge ${isPast ? "past" : "upcoming"}`}>
+                              {isPast ? "Past" : "Upcoming"}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="table-actions">
+                              <button
+                                onClick={() => handleEdit(event)}
+                                className="btn btn-sm btn-outline"
+                                title="Edit Event"
+                              >
+                                <i className="fas fa-edit"></i>
+                              </button>
+                              <button
+                                onClick={() => handleDelete(event._id)}
+                                className="btn btn-sm btn-danger"
+                                title="Delete Event"
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+
+            {events.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(events.filter((event) => event && event._id).length / itemsPerPage)}
+                totalItems={events.filter((event) => event && event._id).length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                showPageInfo={true}
+                showItemsPerPage={true}
+                onItemsPerPageChange={(newItemsPerPage) => {
+                  setItemsPerPage(newItemsPerPage);
+                  setCurrentPage(1);
+                }}
+              />
+            )}
+          </>
         )}
 
         {/* Event Form Modal */}

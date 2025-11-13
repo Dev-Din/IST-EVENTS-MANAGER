@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import { adminAPI } from "../services/api";
+import { formatDateTime } from "../utils/dateFormatter";
 import "./ManageUsers.css";
 
 const ManageClients = () => {
@@ -87,27 +88,6 @@ const ManageClients = () => {
     setClientToDelete(null);
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "Unknown Date";
-
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return "Invalid Date";
-      }
-
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return "Invalid Date";
-    }
-  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-US", {
@@ -285,7 +265,7 @@ const ManageClients = () => {
                           <div className="user-meta">
                             Joined{" "}
                             {client.createdAt
-                              ? formatDate(client.createdAt)
+                              ? formatDateTime(client.createdAt)
                               : "Unknown Date"}
                           </div>
                         </div>
@@ -313,7 +293,7 @@ const ManageClients = () => {
                     </td>
                     <td>
                       {client.lastLogin
-                        ? formatDate(client.lastLogin)
+                        ? formatDateTime(client.lastLogin)
                         : "Never"}
                     </td>
                     <td>

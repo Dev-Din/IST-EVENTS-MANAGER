@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../App";
 import Loading from "../components/Loading";
+import DownloadButton from "../components/DownloadButton";
 import { adminAPI } from "../services/api";
 import "./Reports.css";
 
@@ -17,9 +18,6 @@ const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedDateRange, setSelectedDateRange] = useState("30days");
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [exportType, setExportType] = useState("");
-  const [exportFormat, setExportFormat] = useState("csv");
 
   // Convert frontend date range to actual dates
   const getDateRange = (range) => {
@@ -90,44 +88,91 @@ const Reports = () => {
     fetchReports();
   }, [isAdmin, fetchReports]);
 
-  const handleExportReport = (type) => {
-    setExportType(type);
-    setShowExportModal(true);
-  };
-
-  const handleDownloadReport = async () => {
+  const handleDownloadReport = async (format) => {
     try {
-      setShowExportModal(false);
       const { startDate, endDate } = getDateRange(selectedDateRange);
+      const downloadFormat = format || "csv";
 
-      const response = await adminAPI.exportData(exportType, {
+      const response = await adminAPI.exportData("tickets", {
         startDate,
         endDate,
-        format: exportFormat,
+        format: downloadFormat,
       });
 
+      // Check if response is valid
+      if (!response.data) {
+        throw new Error("No data received from server");
+      }
+
+      // Check if response is actually an error (empty blob or very small size might indicate error)
+      if (response.data instanceof Blob && response.data.size < 100) {
+        // Small blob might be an error message, check content type
+        const contentType = response.headers["content-type"] || "";
+        if (contentType.includes("application/json") || contentType.includes("text")) {
+          const text = await response.data.text();
+          try {
+            const errorData = JSON.parse(text);
+            throw new Error(errorData.message || errorData.error || "Failed to generate report");
+          } catch (parseError) {
+            // Not JSON, might be text error
+            if (text.includes("error") || text.includes("Error") || text.includes("failed")) {
+              throw new Error(text);
+            }
+          }
+        }
+      }
+
       // Determine file extension and MIME type based on format
-      const fileExtension = exportFormat === "pdf" ? "pdf" : "csv";
-      const mimeType = exportFormat === "pdf" ? "application/pdf" : "text/csv";
+      const fileExtension = format === "pdf" ? "pdf" : "csv";
+      const mimeType = format === "pdf" ? "application/pdf" : "text/csv";
+
+      // Ensure response.data is a Blob
+      const blob = response.data instanceof Blob 
+        ? response.data 
+        : new Blob([response.data], { type: mimeType });
 
       // Create download link for the file
-      const blob = new Blob([response.data], { type: mimeType });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute(
         "download",
-        `${exportType}-report-${selectedDateRange}.${fileExtension}`
+        `tickets-report-${selectedDateRange}.${fileExtension}`
       );
       document.body.appendChild(link);
       link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      
+      // Clean up after a short delay
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
     } catch (error) {
       console.error("Error exporting report:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        `Failed to export ${exportType} report. Please try again.`;
+      let errorMessage = `Failed to export tickets report. Please try again.`;
+      
+      // Try to extract error message
+      if (error.response?.data) {
+        if (error.response.data instanceof Blob) {
+          try {
+            const text = await error.response.data.text();
+            const errorData = JSON.parse(text);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            // Not JSON, check if it's a text error
+            if (typeof error.response.data === "string") {
+              errorMessage = error.response.data;
+            }
+          }
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (typeof error.response.data === "string") {
+          errorMessage = error.response.data;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       alert(errorMessage);
     }
   };
@@ -181,13 +226,10 @@ const Reports = () => {
           </div>
 
           <div className="report-actions">
-            <button
-              onClick={() => handleExportReport("comprehensive")}
-              className="btn btn-outline"
-            >
-              <i className="fas fa-download"></i>
-              Export Report
-            </button>
+            <DownloadButton
+              onDownloadCSV={() => handleDownloadReport("csv")}
+              onDownloadPDF={() => handleDownloadReport("pdf")}
+            />
             <button onClick={fetchReports} className="btn btn-primary">
               <i className="fas fa-sync-alt"></i>
               Refresh
@@ -285,15 +327,9 @@ const Reports = () => {
         <div className="reports-content">
           {/* Top Events */}
           <div className="report-section">
-            <div className="section-header">
-              <h2>Top Performing Events</h2>
-              <button
-                onClick={() => handleExportReport("events")}
-                className="btn btn-sm btn-outline"
-              >
-                Export
-              </button>
-            </div>
+              <div className="section-header">
+                <h2>Top Performing Events</h2>
+              </div>
             <div className="top-events-list">
               {overviewData.topEvents?.map((event, index) => (
                 <div
@@ -338,15 +374,9 @@ const Reports = () => {
 
           {/* Revenue by Category */}
           <div className="report-section">
-            <div className="section-header">
-              <h2>Events by Category</h2>
-              <button
-                onClick={() => handleExportReport("revenue")}
-                className="btn btn-sm btn-outline"
-              >
-                Export
-              </button>
-            </div>
+              <div className="section-header">
+                <h2>Events by Category</h2>
+              </div>
             <div className="revenue-breakdown">
               {overviewData.eventsByCategory?.map((category, index) => {
                 const maxCount = Math.max(
@@ -394,15 +424,9 @@ const Reports = () => {
 
           {/* Sales Trend */}
           <div className="report-section">
-            <div className="section-header">
-              <h2>Sales Trend</h2>
-              <button
-                onClick={() => handleExportReport("sales")}
-                className="btn btn-sm btn-outline"
-              >
-                Export
-              </button>
-            </div>
+              <div className="section-header">
+                <h2>Sales Trend</h2>
+              </div>
             <div className="sales-chart">
               {salesData && salesData.length > 0 ? (
                 <div className="chart-container">
@@ -521,96 +545,6 @@ const Reports = () => {
             </div>
           </div>
         </div>
-
-        {/* Export Format Selection Modal */}
-        {showExportModal && (
-          <div className="modal-overlay">
-            <div className="modal export-modal">
-              <div className="modal-header">
-                <h3>Export {exportType} Report</h3>
-                <button
-                  className="modal-close"
-                  onClick={() => setShowExportModal(false)}
-                >
-                  <i className="fas fa-times"></i>
-                </button>
-              </div>
-
-              <div className="modal-body">
-                <div className="format-selection">
-                  <h4>Choose Export Format:</h4>
-
-                  <div className="format-options">
-                    <label className="format-option">
-                      <input
-                        type="radio"
-                        name="exportFormat"
-                        value="csv"
-                        checked={exportFormat === "csv"}
-                        onChange={(e) => setExportFormat(e.target.value)}
-                      />
-                      <div className="format-card">
-                        <i className="fas fa-file-csv"></i>
-                        <div className="format-info">
-                          <h5>CSV File</h5>
-                          <p>
-                            Spreadsheet format, easy to import into Excel or
-                            Google Sheets
-                          </p>
-                        </div>
-                      </div>
-                    </label>
-
-                    <label className="format-option">
-                      <input
-                        type="radio"
-                        name="exportFormat"
-                        value="pdf"
-                        checked={exportFormat === "pdf"}
-                        onChange={(e) => setExportFormat(e.target.value)}
-                      />
-                      <div className="format-card">
-                        <i className="fas fa-file-pdf"></i>
-                        <div className="format-info">
-                          <h5>PDF Document</h5>
-                          <p>
-                            Professional report with LegitEvents branding and
-                            formatting
-                          </p>
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="date-range-info">
-                  <p>
-                    <strong>Date Range:</strong> {selectedDateRange}
-                  </p>
-                  <p>
-                    <strong>Report Type:</strong> {exportType}
-                  </p>
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button
-                  className="btn btn-outline"
-                  onClick={() => setShowExportModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleDownloadReport}
-                >
-                  <i className="fas fa-download"></i>
-                  Download {exportFormat.toUpperCase()}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

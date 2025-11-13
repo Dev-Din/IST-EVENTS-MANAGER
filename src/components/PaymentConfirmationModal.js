@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Modal from "./Modal";
+import { formatDateTime } from "../utils/dateFormatter";
 import "./PaymentConfirmationModal.css";
 
 const PaymentConfirmationModal = ({
@@ -136,13 +137,7 @@ const PaymentConfirmationModal = ({
                 <h4>{event?.name}</h4>
                 <p>
                   <i className="fas fa-calendar"></i>
-                  {new Date(event?.date).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {formatDateTime(event?.date)}
                 </p>
                 <p>
                   <i className="fas fa-map-marker-alt"></i>

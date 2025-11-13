@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import { adminAPI, eventsAPI } from "../services/api";
+import { formatDate } from "../utils/dateFormatter";
 import "./Dashboard.css";
 
 const AdminDashboard = () => {
@@ -88,13 +89,6 @@ const AdminDashboard = () => {
     }).format(price);
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   if (loading) {
     return <Loading message="Loading dashboard..." />;

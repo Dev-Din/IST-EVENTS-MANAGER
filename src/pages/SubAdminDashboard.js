@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import { eventsAPI } from "../services/api";
+import { formatDate } from "../utils/dateFormatter";
 import "./Dashboard.css";
 
 const SubAdminDashboard = () => {
@@ -44,13 +45,6 @@ const SubAdminDashboard = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("en-US", {

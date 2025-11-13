@@ -5,21 +5,12 @@ import {
   formatEventCurrency,
   DEFAULT_EVENT_CURRENCY,
 } from "../utils/eastAfricanCountries";
+import { formatDateTime } from "../utils/dateFormatter";
 import "./EventCard.css";
 
 const EventCard = ({ event, onEdit, onDelete, showActions = false }) => {
   const { isAuthenticated } = useAuth();
 
-  const formatDate = (dateString) => {
-    const options = {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    };
-    return new Date(dateString).toLocaleDateString("en-US", options);
-  };
 
   const formatPrice = (price, currency) => {
     // Use event's currency or default to KES
@@ -86,7 +77,7 @@ const EventCard = ({ event, onEdit, onDelete, showActions = false }) => {
         <div className="event-info">
           <div className="info-item">
             <i className="fas fa-calendar"></i>
-            <span>{formatDate(event.date)}</span>
+            <span>{formatDateTime(event.date)}</span>
           </div>
 
           <div className="info-item">

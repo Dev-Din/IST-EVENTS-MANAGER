@@ -108,7 +108,28 @@ export const adminAPI = {
       `/admin/reports?type=events&startDate=${startDate}&endDate=${endDate}`
     ),
   exportData: (dataType, options = {}) => {
-    return api.post(`/admin/export/${dataType}`, options, {
+    const format = options.format || "csv";
+    const endpoint = format === "pdf" 
+      ? `/admin/export-pdf/${dataType}`
+      : `/admin/export/${dataType}`;
+    // Include role in body if provided
+    const body = {
+      startDate: options.startDate,
+      endDate: options.endDate,
+      role: options.role, // For filtering users by role
+    };
+    
+    // Debug logging
+    console.log("Frontend API - Export Data Request:", {
+      endpoint,
+      dataType,
+      format,
+      body: JSON.stringify(body),
+      role: options.role,
+      roleType: typeof options.role
+    });
+    
+    return api.post(endpoint, body, {
       responseType: "blob", // Important for file downloads
     });
   },

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../App";
 import EventCard from "../components/EventCard";
 import Loading from "../components/Loading";
+import Pagination from "../components/Pagination";
 import { eventsAPI } from "../services/api";
 import "./Home.css";
 
@@ -12,6 +13,8 @@ const Home = () => {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
 
   useEffect(() => {
     fetchEvents();
@@ -50,6 +53,17 @@ const Home = () => {
           return 0;
       }
     });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredAndSortedEvents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedEvents = filteredAndSortedEvents.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortBy]);
 
   if (loading) {
     return <Loading message="Loading events..." />;
@@ -156,11 +170,29 @@ const Home = () => {
               </p>
             </div>
           ) : (
-            <div className="events-grid">
-              {filteredAndSortedEvents.map((event) => (
-                <EventCard key={event._id} event={event} />
-              ))}
-            </div>
+            <>
+              <div className="events-grid">
+                {paginatedEvents.map((event) => (
+                  <EventCard key={event._id} event={event} />
+                ))}
+              </div>
+
+              {filteredAndSortedEvents.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={filteredAndSortedEvents.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  showPageInfo={true}
+                  showItemsPerPage={true}
+                  onItemsPerPageChange={(newItemsPerPage) => {
+                    setItemsPerPage(newItemsPerPage);
+                    setCurrentPage(1);
+                  }}
+                />
+              )}
+            </>
           )}
         </div>
       </div>

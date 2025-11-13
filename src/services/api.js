@@ -61,7 +61,29 @@ export const eventsAPI = {
 
 export const ticketsAPI = {
   purchase: (purchaseData) => api.post("/tickets/purchase", purchaseData),
-  getMyTickets: () => api.get("/tickets/my-tickets"),
+  getMyTickets: async () => {
+    try {
+      const response = await api.get("/tickets/my-tickets");
+      // Normalize response to always return consistent structure
+      if (response?.data) {
+        // Ensure data is always an array
+        const tickets = response.data.data || response.data.tickets || [];
+        return {
+          ...response,
+          data: {
+            ...response.data,
+            tickets: Array.isArray(tickets) ? tickets : [],
+            data: Array.isArray(tickets) ? tickets : [],
+          },
+        };
+      }
+      return response;
+    } catch (error) {
+      // Return normalized error response
+      console.error("Error fetching tickets:", error);
+      throw error;
+    }
+  },
   downloadTicket: (ticketId) =>
     api.get(`/tickets/${ticketId}/download`, { responseType: "blob" }),
   downloadAllTickets: () =>

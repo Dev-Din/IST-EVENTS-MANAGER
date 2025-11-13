@@ -6,6 +6,7 @@ import {
   EAST_AFRICAN_COUNTRIES,
   getCountryByCode,
 } from "../utils/eastAfricanCountries";
+import { formatDate } from "../utils/dateFormatter";
 import "./Profile.css";
 
 const Profile = () => {
@@ -576,7 +577,7 @@ const Profile = () => {
                                 activity.amount,
                                 activity.currency
                               )}{" "}
-                              • {new Date(activity.date).toLocaleDateString()}
+                              • {formatDate(activity.date)}
                             </p>
                           </div>
                         </div>

@@ -435,12 +435,29 @@ const getReports = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Export data as CSV
-// @route   POST /api/admin/export/:type
-// @access  Private/Admin
+/**
+ * @desc    Export data as CSV
+ * @route   POST /api/admin/export/:type
+ * @access  Private/Admin
+ * 
+ * Role-Based Filtering:
+ * - When role="client" in request body: Returns ONLY users with role="client"
+ * - When role="sub-admin" in request body: Returns ONLY users with role="sub-admin"
+ * - When no role specified: Returns all active users
+ * 
+ * Safety Measures:
+ * 1. MongoDB query filters by exact role match
+ * 2. Post-query JavaScript filter removes any non-matching roles
+ * 3. Final verification before CSV generation catches any remaining issues
+ * 
+ * @param {string} type - Type of data to export: "users", "events", "tickets", etc.
+ * @param {string} req.body.role - Optional role filter: "client" or "sub-admin"
+ * @param {string} req.body.startDate - Optional start date filter
+ * @param {string} req.body.endDate - Optional end date filter
+ */
 const exportCSV = asyncHandler(async (req, res, next) => {
   const { type } = req.params;
-  const { startDate, endDate } = req.body;
+  const { startDate, endDate, role } = req.body;
 
   let data, csvContent, filename;
 
@@ -454,11 +471,105 @@ const exportCSV = asyncHandler(async (req, res, next) => {
 
   switch (type) {
     case "users":
-      data = await User.find({ isActive: true, ...dateFilter }).select(
-        "-password"
-      );
+      // Support role filtering via body parameter - if role is specified, ONLY get that role
+      // Strictly filter by role to prevent mixing admins/sub-admins with clients
+      let userQuery = {};
+      
+      // ========== DEBUGGING: Export CSV ==========
+      console.log("\n========== EXPORT CSV DEBUG START ==========");
+      console.log("Request params:", JSON.stringify(req.params));
+      console.log("Request body:", JSON.stringify(req.body));
+      console.log("Role parameter (extracted):", role);
+      console.log("Role type:", typeof role);
+      console.log("Role === 'client':", role === "client");
+      console.log("Role === 'sub-admin':", role === "sub-admin");
+      console.log("Type parameter:", type);
+      console.log("Date filter:", JSON.stringify(dateFilter));
+      
+      // CRITICAL: When role is "client", ONLY get clients - exclude super-admin and sub-admin
+      if (role === "client") {
+        // Explicitly filter ONLY for clients - exclude all other roles
+        userQuery = { role: "client" };
+        
+        // Apply date filter if provided
+        if (Object.keys(dateFilter).length > 0) {
+          userQuery = { ...userQuery, ...dateFilter };
+        }
+        console.log("✓ Using CLIENT filter");
+      } else if (role === "sub-admin") {
+        // When role is "sub-admin", ONLY get sub-admins
+        userQuery = { role: "sub-admin" };
+        
+        // Apply date filter if provided
+        if (Object.keys(dateFilter).length > 0) {
+          userQuery = { ...userQuery, ...dateFilter };
+        }
+        console.log("✓ Using SUB-ADMIN filter");
+      } else {
+        // Default: get all active users (no role filter)
+        userQuery = { isActive: true, ...dateFilter };
+        console.log("⚠ Using DEFAULT filter (all active users)");
+      }
+      
+      console.log("Final MongoDB Query:", JSON.stringify(userQuery, null, 2));
+      
+      // Execute query
+      data = await User.find(userQuery).select("-password");
+      console.log("Users found BEFORE post-filter:", data.length);
+      console.log("Roles BEFORE post-filter:", [...new Set(data.map(u => u.role))]);
+      
+      // Additional safety check: filter out any non-matching roles in case of data inconsistency
+      const originalLength = data.length;
+      if (role === "client") {
+        data = data.filter(user => {
+          const isClient = user.role === "client";
+          if (!isClient) {
+            console.log(`⚠ FILTERED OUT: ${user.username} (role: ${user.role})`);
+          }
+          return isClient;
+        });
+        console.log(`Post-filter: ${originalLength} → ${data.length} users (removed ${originalLength - data.length})`);
+      } else if (role === "sub-admin") {
+        data = data.filter(user => {
+          const isSubAdmin = user.role === "sub-admin";
+          if (!isSubAdmin) {
+            console.log(`⚠ FILTERED OUT: ${user.username} (role: ${user.role})`);
+          }
+          return isSubAdmin;
+        });
+        console.log(`Post-filter: ${originalLength} → ${data.length} users (removed ${originalLength - data.length})`);
+      }
+      
+      console.log("Final users count:", data.length);
+      console.log("Final user details:", data.map(u => ({ 
+        username: u.username, 
+        role: u.role,
+        email: u.email 
+      })));
+      console.log("========== EXPORT CSV DEBUG END ==========\n");
+      
+      // Final verification before generating CSV
+      if (role === "client") {
+        const nonClients = data.filter(u => u.role !== "client");
+        if (nonClients.length > 0) {
+          console.error("❌ ERROR: Non-client users found in data:", nonClients.map(u => ({ username: u.username, role: u.role })));
+          // Force filter again as absolute safety
+          data = data.filter(u => u.role === "client");
+          console.log("✓ Force filtered to clients only");
+        }
+      } else if (role === "sub-admin") {
+        const nonSubAdmins = data.filter(u => u.role !== "sub-admin");
+        if (nonSubAdmins.length > 0) {
+          console.error("❌ ERROR: Non-sub-admin users found in data:", nonSubAdmins.map(u => ({ username: u.username, role: u.role })));
+          // Force filter again as absolute safety
+          data = data.filter(u => u.role === "sub-admin");
+          console.log("✓ Force filtered to sub-admins only");
+        }
+      }
+      
       csvContent = CSVGenerator.generateUsersCSV(data);
-      filename = `users-export-${Date.now()}.csv`;
+      const roleSuffix = role ? `-${role}` : "";
+      filename = `users${roleSuffix}-export-${Date.now()}.csv`;
       break;
 
     case "events":
@@ -526,12 +637,29 @@ const exportCSV = asyncHandler(async (req, res, next) => {
   res.send(csvContent);
 });
 
-// @desc    Export data as PDF
-// @route   POST /api/admin/export-pdf/:type
-// @access  Private/Admin
+/**
+ * @desc    Export data as PDF
+ * @route   POST /api/admin/export-pdf/:type
+ * @access  Private/Admin
+ * 
+ * Role-Based Filtering:
+ * - When role="client" in request body: Returns ONLY users with role="client"
+ * - When role="sub-admin" in request body: Returns ONLY users with role="sub-admin"
+ * - When no role specified: Returns all active users
+ * 
+ * Safety Measures:
+ * 1. MongoDB query filters by exact role match
+ * 2. Post-query JavaScript filter removes any non-matching roles
+ * 3. Final verification before PDF generation catches any remaining issues
+ * 
+ * @param {string} type - Type of data to export: "users", "events", "tickets", etc.
+ * @param {string} req.body.role - Optional role filter: "client" or "sub-admin"
+ * @param {string} req.body.startDate - Optional start date filter
+ * @param {string} req.body.endDate - Optional end date filter
+ */
 const exportPDF = asyncHandler(async (req, res, next) => {
   const { type } = req.params;
-  const { startDate, endDate } = req.body;
+  const { startDate, endDate, role } = req.body;
 
   let data, filename;
 
@@ -545,10 +673,104 @@ const exportPDF = asyncHandler(async (req, res, next) => {
 
   switch (type) {
     case "users":
-      data = await User.find({ isActive: true, ...dateFilter }).select(
-        "-password"
-      );
-      filename = `users-report-${Date.now()}.pdf`;
+      // Support role filtering via body parameter - if role is specified, ONLY get that role
+      // Strictly filter by role to prevent mixing admins/sub-admins with clients
+      let userQueryPDF = {};
+      
+      // ========== DEBUGGING: Export PDF ==========
+      console.log("\n========== EXPORT PDF DEBUG START ==========");
+      console.log("Request params:", JSON.stringify(req.params));
+      console.log("Request body:", JSON.stringify(req.body));
+      console.log("Role parameter (extracted):", role);
+      console.log("Role type:", typeof role);
+      console.log("Role === 'client':", role === "client");
+      console.log("Role === 'sub-admin':", role === "sub-admin");
+      console.log("Type parameter:", type);
+      console.log("Date filter:", JSON.stringify(dateFilter));
+      
+      // CRITICAL: When role is "client", ONLY get clients - exclude super-admin and sub-admin
+      if (role === "client") {
+        // Explicitly filter ONLY for clients - exclude all other roles
+        userQueryPDF = { role: "client" };
+        
+        // Apply date filter if provided
+        if (Object.keys(dateFilter).length > 0) {
+          userQueryPDF = { ...userQueryPDF, ...dateFilter };
+        }
+        console.log("✓ Using CLIENT filter");
+      } else if (role === "sub-admin") {
+        // When role is "sub-admin", ONLY get sub-admins
+        userQueryPDF = { role: "sub-admin" };
+        
+        // Apply date filter if provided
+        if (Object.keys(dateFilter).length > 0) {
+          userQueryPDF = { ...userQueryPDF, ...dateFilter };
+        }
+        console.log("✓ Using SUB-ADMIN filter");
+      } else {
+        // Default: get all active users (no role filter)
+        userQueryPDF = { isActive: true, ...dateFilter };
+        console.log("⚠ Using DEFAULT filter (all active users)");
+      }
+      
+      console.log("Final MongoDB Query:", JSON.stringify(userQueryPDF, null, 2));
+      
+      // Execute query
+      data = await User.find(userQueryPDF).select("-password");
+      console.log("Users found BEFORE post-filter:", data.length);
+      console.log("Roles BEFORE post-filter:", [...new Set(data.map(u => u.role))]);
+      
+      // Additional safety check: filter out any non-matching roles in case of data inconsistency
+      const originalLength = data.length;
+      if (role === "client") {
+        data = data.filter(user => {
+          const isClient = user.role === "client";
+          if (!isClient) {
+            console.log(`⚠ FILTERED OUT: ${user.username} (role: ${user.role})`);
+          }
+          return isClient;
+        });
+        console.log(`Post-filter: ${originalLength} → ${data.length} users (removed ${originalLength - data.length})`);
+      } else if (role === "sub-admin") {
+        data = data.filter(user => {
+          const isSubAdmin = user.role === "sub-admin";
+          if (!isSubAdmin) {
+            console.log(`⚠ FILTERED OUT: ${user.username} (role: ${user.role})`);
+          }
+          return isSubAdmin;
+        });
+        console.log(`Post-filter: ${originalLength} → ${data.length} users (removed ${originalLength - data.length})`);
+      }
+      
+      console.log("Final users count:", data.length);
+      console.log("Final user details:", data.map(u => ({ 
+        username: u.username, 
+        role: u.role,
+        email: u.email 
+      })));
+      console.log("========== EXPORT PDF DEBUG END ==========\n");
+      
+      // Final verification before generating PDF
+      if (role === "client") {
+        const nonClients = data.filter(u => u.role !== "client");
+        if (nonClients.length > 0) {
+          console.error("❌ ERROR: Non-client users found in data:", nonClients.map(u => ({ username: u.username, role: u.role })));
+          // Force filter again as absolute safety
+          data = data.filter(u => u.role === "client");
+          console.log("✓ Force filtered to clients only");
+        }
+      } else if (role === "sub-admin") {
+        const nonSubAdmins = data.filter(u => u.role !== "sub-admin");
+        if (nonSubAdmins.length > 0) {
+          console.error("❌ ERROR: Non-sub-admin users found in data:", nonSubAdmins.map(u => ({ username: u.username, role: u.role })));
+          // Force filter again as absolute safety
+          data = data.filter(u => u.role === "sub-admin");
+          console.log("✓ Force filtered to sub-admins only");
+        }
+      }
+      
+      const roleSuffix = role ? `-${role}` : "";
+      filename = `users${roleSuffix}-report-${Date.now()}.pdf`;
       break;
 
     case "events":

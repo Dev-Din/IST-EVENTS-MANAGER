@@ -37,6 +37,12 @@ class CSVGenerator {
   }
 
   static generateUsersCSV(users) {
+    // Safety check: ensure we only process the users array passed to us
+    if (!users || !Array.isArray(users)) {
+      console.error("CSV Generator: Invalid users data provided");
+      return "No data available";
+    }
+
     const headers = [
       "username",
       "email",
@@ -50,20 +56,29 @@ class CSVGenerator {
       "createdAt",
     ];
 
-    const processedData = users.map((user) => ({
-      username: user.username,
-      email: user.email,
-      fullName: user.fullName || "",
-      role: user.role,
-      country: user.country,
-      currency: user.currency,
-      isActive: user.isActive ? "Yes" : "No",
-      emailVerified: user.emailVerified ? "Yes" : "No",
-      lastLogin: user.lastLogin
-        ? new Date(user.lastLogin).toISOString()
-        : "Never",
-      createdAt: new Date(user.createdAt).toISOString(),
-    }));
+    // Process only the users provided - no additional filtering here
+    const processedData = users.map((user) => {
+      if (!user || typeof user !== "object") {
+        console.warn("CSV Generator: Invalid user object found:", user);
+        return null;
+      }
+      return {
+        username: user.username || "",
+        email: user.email || "",
+        fullName: user.fullName || "",
+        role: user.role || "",
+        country: user.country || "",
+        currency: user.currency || "",
+        isActive: user.isActive ? "Yes" : "No",
+        emailVerified: user.emailVerified ? "Yes" : "No",
+        lastLogin: user.lastLogin
+          ? new Date(user.lastLogin).toISOString()
+          : "Never",
+        createdAt: user.createdAt
+          ? new Date(user.createdAt).toISOString()
+          : "",
+      };
+    }).filter(Boolean); // Remove any null entries
 
     return this.generateCSV(processedData, headers);
   }

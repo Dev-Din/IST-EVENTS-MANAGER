@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import Modal from "../components/Modal";
+import Pagination from "../components/Pagination";
+import DownloadButton from "../components/DownloadButton";
 import { adminAPI } from "../services/api";
 import "./ManageUsers.css";
 
@@ -12,6 +14,8 @@ const ManageSubAdmins = () => {
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -204,6 +208,47 @@ const ManageSubAdmins = () => {
     });
   };
 
+  // Pagination logic
+  const totalPages = Math.ceil(subAdmins.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedSubAdmins = subAdmins.slice(startIndex, endIndex);
+
+  const handleDownloadExport = async (format) => {
+    try {
+      const response = await adminAPI.exportData("users", {
+        format: format,
+        role: "sub-admin", // Filter for sub-admins only
+      });
+
+      // Determine file extension and MIME type
+      const fileExtension = format === "pdf" ? "pdf" : "csv";
+      const mimeType = format === "pdf" ? "application/pdf" : "text/csv";
+
+      // Create download link
+      const blob = response.data instanceof Blob 
+        ? response.data 
+        : new Blob([response.data], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `sub-admins-export.${fileExtension}`);
+      document.body.appendChild(link);
+      link.click();
+      
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error("Error exporting sub-admins:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        `Failed to export sub-admins as ${format.toUpperCase()}. Please try again.`;
+      alert(errorMessage);
+    }
+  };
+
   if (loading) {
     return <Loading message="Loading sub-admins..." />;
   }
@@ -231,7 +276,14 @@ const ManageSubAdmins = () => {
             <i className="fas fa-plus"></i>
             Add Sub-Admin
           </button>
-          <div className="users-count">{subAdmins.length} Sub-Admins Total</div>
+          <div className="actions-right">
+            <DownloadButton
+              onDownloadCSV={() => handleDownloadExport("csv")}
+              onDownloadPDF={() => handleDownloadExport("pdf")}
+              disabled={subAdmins.length === 0}
+            />
+            <div className="users-count">{subAdmins.length} Sub-Admins Total</div>
+          </div>
         </div>
 
         {error && (
@@ -270,7 +322,7 @@ const ManageSubAdmins = () => {
                 </tr>
               </thead>
               <tbody>
-                {subAdmins
+                {paginatedSubAdmins
                   .filter((admin) => admin && admin._id)
                   .map((admin) => (
                     <tr key={admin._id}>
@@ -365,6 +417,22 @@ const ManageSubAdmins = () => {
               </tbody>
             </table>
           </div>
+        )}
+
+        {subAdmins.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={subAdmins.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            showPageInfo={true}
+            showItemsPerPage={true}
+            onItemsPerPageChange={(newItemsPerPage) => {
+              setItemsPerPage(newItemsPerPage);
+              setCurrentPage(1);
+            }}
+          />
         )}
 
         {/* Sub-Admin Form Modal */}

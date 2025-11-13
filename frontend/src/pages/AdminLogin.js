@@ -111,7 +111,6 @@ const AdminLogin = () => {
             <i className="fas fa-shield-alt"></i>
           </div>
           <h1>Admin Access</h1>
-          <p>Restricted area for administrators only</p>
         </div>
 
         <form className="admin-login-form" onSubmit={handleSubmit}>
@@ -175,7 +174,7 @@ const AdminLogin = () => {
             ) : (
               <>
                 <i className="fas fa-sign-in-alt"></i>
-                Admin Sign In
+                Sign In
               </>
             )}
           </button>
@@ -185,17 +184,12 @@ const AdminLogin = () => {
           <div className="admin-auth-links">
             <Link to="/forgot-password" className="admin-auth-link">
               <i className="fas fa-key"></i>
-              Forgot Password? (Sub-Admins Only)
+              Forgot Password?
             </Link>
           </div>
           <p className="security-notice">
             <i className="fas fa-info-circle"></i>
             This is a secure area. All login attempts are monitored.
-          </p>
-          <p className="password-reset-info">
-            <i className="fas fa-exclamation-triangle"></i>
-            Password reset is available for Sub-Admins only. Super-Admins must
-            contact system administrator.
           </p>
         </div>
       </div>

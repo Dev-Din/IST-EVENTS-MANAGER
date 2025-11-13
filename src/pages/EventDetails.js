@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import { eventsAPI } from "../services/api";
+import { formatDate, formatDateTime } from "../utils/dateFormatter";
 import "./EventDetails.css";
 
 const EventDetails = () => {
@@ -37,31 +38,14 @@ const EventDetails = () => {
     fetchEvent();
   }, [fetchEvent]);
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const options = {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZoneName: "short",
-    };
-    return date.toLocaleDateString("en-US", options);
-  };
-
   const formatDateShort = (dateString) => {
     const date = new Date(dateString);
+    const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
     return {
-      month: date.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
+      month: monthNames[date.getMonth()],
       day: date.getDate(),
       year: date.getFullYear(),
-      time: date.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      }),
+      time: formatDateTime(dateString).split(" ")[1] || "",
     };
   };
 
@@ -198,7 +182,7 @@ const EventDetails = () => {
                   </div>
                   <div className="card-content">
                     <h3>Date & Time</h3>
-                    <p className="primary-text">{formatDate(event.date)}</p>
+                    <p className="primary-text">{formatDateTime(event.date)}</p>
                   </div>
                 </div>
 

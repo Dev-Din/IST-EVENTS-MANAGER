@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../App";
 import Loading from "../components/Loading";
+import Pagination from "../components/Pagination";
+import DownloadButton from "../components/DownloadButton";
 import { adminAPI } from "../services/api";
 import "./ManageUsers.css";
 
@@ -9,9 +11,12 @@ const ManageClients = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchBy, setSearchBy] = useState("client"); // client, clientId, contact
+  const [searchInput, setSearchInput] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -112,12 +117,70 @@ const ManageClients = () => {
     }).format(amount);
   };
 
+  const handleDownloadExport = async (format) => {
+    try {
+      const response = await adminAPI.exportData("users", {
+        format: format,
+        role: "client", // Filter for clients only
+      });
+
+      // Determine file extension and MIME type
+      const fileExtension = format === "pdf" ? "pdf" : "csv";
+      const mimeType = format === "pdf" ? "application/pdf" : "text/csv";
+
+      // Create download link
+      const blob = response.data instanceof Blob 
+        ? response.data 
+        : new Blob([response.data], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `clients-export.${fileExtension}`);
+      document.body.appendChild(link);
+      link.click();
+      
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error("Error exporting clients:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        `Failed to export clients as ${format.toUpperCase()}. Please try again.`;
+      alert(errorMessage);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setCurrentPage(1);
+  };
+
   const filteredClients = clients.filter((client) => {
-    const matchesSearch =
-      !searchTerm ||
-      client.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase());
+    let matchesSearch = true;
+    
+    // Real-time search filtering based on selected factor
+    if (searchInput && searchInput.trim()) {
+      const searchLower = searchInput.trim().toLowerCase();
+      switch (searchBy) {
+        case "clientId":
+          matchesSearch = (client.userId || "").toLowerCase().includes(searchLower);
+          break;
+        case "client":
+          matchesSearch =
+            client.fullName?.toLowerCase().includes(searchLower) ||
+            client.username.toLowerCase().includes(searchLower);
+          break;
+        case "contact":
+          matchesSearch =
+            client.email.toLowerCase().includes(searchLower) ||
+            (client.phone && client.phone.toLowerCase().includes(searchLower));
+          break;
+        default:
+          matchesSearch = true;
+      }
+    }
 
     const matchesStatus =
       filterStatus === "all" ||
@@ -126,6 +189,17 @@ const ManageClients = () => {
 
     return matchesSearch && matchesStatus;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedClients = filteredClients.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters or search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, searchInput, searchBy]);
 
   if (loading) {
     return <Loading message="Loading clients..." />;
@@ -150,28 +224,59 @@ const ManageClients = () => {
         </div>
 
         <div className="filters-bar">
-          <div className="search-box">
-            <i className="fas fa-search"></i>
-            <input
-              type="text"
-              placeholder="Search clients..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="search-filters-group">
+            <select
+              value={searchBy}
+              onChange={(e) => setSearchBy(e.target.value)}
+              className="filter-select search-by-select"
+            >
+              <option value="client">Client</option>
+              <option value="clientId">Client ID</option>
+              <option value="contact">Contact</option>
+            </select>
+
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="filter-select status-select"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+
+            <div className="search-box">
+              <i className="fas fa-search"></i>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+            </div>
+
+            <div className="search-actions">
+              {searchInput && (
+                <button
+                  onClick={handleClearSearch}
+                  className="btn btn-outline clear-btn"
+                  title="Clear search"
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              )}
+            </div>
           </div>
 
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="filter-select"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-
-          <div className="users-count">
-            {filteredClients.length} of {clients.length} Clients
+          <div className="actions-right">
+            <DownloadButton
+              onDownloadCSV={() => handleDownloadExport("csv")}
+              onDownloadPDF={() => handleDownloadExport("pdf")}
+              disabled={clients.length === 0}
+            />
+            <div className="users-count">
+              {filteredClients.length} of {clients.length} Clients
+            </div>
           </div>
         </div>
 
@@ -265,7 +370,7 @@ const ManageClients = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredClients.map((client) => (
+                {paginatedClients.map((client) => (
                   <tr key={client._id}>
                     <td>
                       <div className="user-id">
@@ -373,6 +478,22 @@ const ManageClients = () => {
               </tbody>
             </table>
           </div>
+        )}
+
+        {filteredClients.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredClients.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            showPageInfo={true}
+            showItemsPerPage={true}
+            onItemsPerPageChange={(newItemsPerPage) => {
+              setItemsPerPage(newItemsPerPage);
+              setCurrentPage(1);
+            }}
+          />
         )}
       </div>
 

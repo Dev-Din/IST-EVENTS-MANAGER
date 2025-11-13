@@ -57,6 +57,7 @@ describe("M-Pesa Integration Tests", () => {
     test("should validate phone number format", () => {
       expect(mpesaService.validatePhoneNumber("254712345678")).toBe(true);
       expect(mpesaService.validatePhoneNumber("254708374149")).toBe(true);
+      expect(mpesaService.validatePhoneNumber("254112345678")).toBe(true);
       expect(mpesaService.validatePhoneNumber("0712345678")).toBe(false);
       expect(mpesaService.validatePhoneNumber("123456789")).toBe(false);
     });
@@ -66,6 +67,10 @@ describe("M-Pesa Integration Tests", () => {
         "254712345678"
       );
       expect(mpesaService.formatPhoneNumber("0712345678")).toBe("254712345678");
+      expect(mpesaService.formatPhoneNumber("0112345678")).toBe("254112345678");
+      expect(mpesaService.formatPhoneNumber("+254712345678")).toBe(
+        "254712345678"
+      );
       expect(() => mpesaService.formatPhoneNumber("123456789")).toThrow();
     });
 

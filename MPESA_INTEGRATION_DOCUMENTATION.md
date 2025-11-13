@@ -367,9 +367,10 @@ npm test -- tests/mpesa.test.js
 
 3. **Update callback URL in .env:**
 
-   ```env
-   MPESA_CALLBACK_URL=https://your-ngrok-url.ngrok.io/api/payments/mpesa/callback
-   ```
+```env
+MPESA_CALLBACK_URL=https://boreal-etta-unfuddled.ngrok-free.dev/api/payments/mpesa/callback
+# If ngrok issues a new URL, update MPESA_CALLBACK_URL to match.
+```
 
 4. **Test with sandbox credentials:**
    - Phone: 254708374149

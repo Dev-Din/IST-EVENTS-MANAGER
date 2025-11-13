@@ -29,38 +29,136 @@
   gap: 1rem;
 }
 
+.actions-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .users-count {
   color: var(--gray-600);
   font-weight: 500;
 }
 
 /* Search and Filter Styles */
+.search-filters-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.search-by-select,
+.status-select {
+  padding: 0.625rem 0.875rem;
+  border: 2px solid var(--gray-300);
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
+  background-color: white;
+  cursor: pointer;
+  height: 40px;
+  min-width: 120px;
+  max-width: 150px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-by-select:hover,
+.status-select:hover {
+  border-color: var(--primary-color);
+}
+
+.search-by-select:focus,
+.status-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
 .search-box {
   position: relative;
   flex: 1;
-  max-width: 300px;
+  min-width: 180px;
+  max-width: 250px;
+  height: 40px;
 }
 
 .search-box i {
   position: absolute;
-  left: 1rem;
+  left: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--gray-600);
+  pointer-events: none;
+  z-index: 1;
+  font-size: 0.875rem;
 }
 
 .search-box input {
   width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  padding: 0.625rem 0.875rem 0.625rem 2rem;
   border: 2px solid var(--gray-300);
   border-radius: var(--border-radius);
-  font-size: 1rem;
-  transition: border-color 0.3s ease;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  height: 40px;
+  box-sizing: border-box;
+  line-height: 1.5;
+  background-color: white;
 }
 
 .search-box input:focus {
   outline: none;
   border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.search-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.search-btn {
+  padding: 0.625rem;
+  min-width: 40px;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  box-sizing: border-box;
+  line-height: 1.5;
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.clear-btn {
+  padding: 0.625rem;
+  min-width: 40px;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  box-sizing: border-box;
+  line-height: 1.5;
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .filter-select {
@@ -75,9 +173,10 @@
 /* Summary Cards */
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   margin-bottom: 2rem;
+  align-items: stretch;
 }
 
 .summary-card {
@@ -89,7 +188,9 @@
   align-items: center;
   gap: 1rem;
   min-width: 0;
+  height: 100%;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
 }
 
 .summary-card:hover {
@@ -109,19 +210,32 @@
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
 }
 
+.summary-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
 .summary-content h3 {
-  font-size: clamp(1.3rem, 3.5vw, 1.8rem);
+  font-size: 1.8rem;
   font-weight: 700;
   color: var(--gray-900);
   margin-bottom: 0.25rem;
-  word-break: break-word;
-  overflow-wrap: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   line-height: 1.1;
 }
 
 .summary-content p {
   color: var(--gray-600);
   font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Users Table */
@@ -142,12 +256,17 @@
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid var(--gray-300);
+  vertical-align: top;
 }
 
 .users-table th {
   background-color: var(--gray-100);
   font-weight: 600;
   color: var(--gray-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
 }
 
 .user-info {
@@ -433,12 +552,31 @@
     align-items: stretch;
   }
 
+  .search-filters-group {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .search-by-select,
+  .status-select {
+    min-width: 100px;
+    max-width: 100%;
+    flex: 1 1 auto;
+  }
+
   .search-box {
-    max-width: none;
+    min-width: 150px;
+    max-width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .search-btn {
+    flex: 1 1 auto;
+    min-width: 100px;
   }
 
   .summary-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .users-table {
@@ -488,23 +626,36 @@
   }
 
   .summary-content h3 {
-    font-size: clamp(1rem, 6vw, 1.4rem);
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    hyphens: auto;
+    font-size: 1.4rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     line-height: 1.2;
+  }
+  
+  .summary-content p {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
 /* Medium screens - Enhanced responsive grid for ManageUsers */
 @media (max-width: 1024px) and (min-width: 769px) {
   .summary-grid {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
   }
 
   .summary-content h3 {
-    font-size: clamp(1.2rem, 3vw, 1.7rem);
+    font-size: 1.5rem;
+  }
+}
+
+/* Large screens - Ensure all cards in one row */
+@media (min-width: 1025px) {
+  .summary-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -700,6 +851,7 @@
 .users-table th {
   text-align: left;
   padding-left: 1rem;
+  vertical-align: middle;
 }
 
 .users-table td {

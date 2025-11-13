@@ -117,7 +117,7 @@ TicketSchema.pre("save", function (next) {
 // Static method to get tickets by user
 TicketSchema.statics.getTicketsByUser = function (userId) {
   return this.find({ user: userId, isActive: true })
-    .populate("event", "title date location price")
+    .populate("event", "title date location price currency description name")
     .populate("user", "username email fullName")
     .sort({ purchaseDate: -1 });
 };

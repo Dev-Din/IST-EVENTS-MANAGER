@@ -67,7 +67,7 @@ if [ ${#missing_vars[@]} -gt 0 ]; then
     echo "  MPESA_CONSUMER_SECRET=kueOiHHw8AsXEF0iaGFGSJStGEJvsszTEUOAaXagviAd7wfJL0kGhma3CAmuBXck"
     echo "  MPESA_SHORTCODE=174379"
     echo "  MPESA_PASSKEY=bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
-    echo "  MPESA_CALLBACK_URL=https://your-ngrok-url.ngrok.io/api/payments/mpesa/callback"
+    echo "  MPESA_CALLBACK_URL=https://boreal-etta-unfuddled.ngrok-free.dev/api/payments/mpesa/callback"
     echo ""
     exit 1
 fi
@@ -146,8 +146,9 @@ print_info "Checking ngrok installation..."
 
 if command -v ngrok &> /dev/null; then
     print_status "ngrok is installed"
-    print_info "To expose your callback URL, run: ngrok http 5000"
-    print_info "Then update MPESA_CALLBACK_URL in your .env file"
+    print_info "Current tunnel: https://boreal-etta-unfuddled.ngrok-free.dev"
+    print_info "Callback endpoint: https://boreal-etta-unfuddled.ngrok-free.dev/api/payments/mpesa/callback"
+    print_info "If you restart ngrok, remember to update MPESA_CALLBACK_URL in your .env file"
 else
     print_warning "ngrok not found"
     print_info "Install ngrok for callback testing:"

@@ -50,21 +50,136 @@
   margin-bottom: 0.5rem;
 }
 
-.events-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 2rem;
-}
-
-.events-grid .event-card {
-  min-width: 0;
+/* Events Table Styles */
+.events-table-container {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-light);
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin-bottom: 2rem;
 }
 
-.events-grid .event-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1), 0 20px 40px rgba(0, 0, 0, 0.15);
+.events-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.events-table thead {
+  background-color: var(--gray-100);
+}
+
+.events-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-dark);
+  border-bottom: 2px solid var(--border-light);
+  white-space: nowrap;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.events-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+  color: var(--text-dark);
+}
+
+.events-table tbody tr:hover {
+  background-color: var(--bg-light);
+}
+
+.events-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.event-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.event-name-cell strong {
+  color: var(--text-dark);
+  font-size: 1rem;
+}
+
+.event-description {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.event-date-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.event-time {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.category-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: var(--primary);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.upcoming {
+  background-color: #059669;
+  color: white;
+}
+
+.status-badge.past {
+  background-color: #6b7280;
+  color: white;
+}
+
+.available {
+  color: #059669;
+  font-weight: 600;
+}
+
+.sold-out {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.table-actions .btn {
+  padding: 0.5rem;
+  min-width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 /* Event Form Styles */
@@ -124,13 +239,18 @@
     align-items: stretch;
   }
 
-  .events-grid {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1rem;
+  .events-table-container {
+    overflow-x: auto;
   }
 
-  .events-grid .event-card {
-    min-width: 0;
+  .events-table {
+    min-width: 1000px;
+  }
+
+  .events-table th,
+  .events-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
   }
 
   .form-actions {
@@ -147,20 +267,29 @@
     font-size: 3rem;
   }
 
-  .events-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  .events-table {
+    min-width: 800px;
   }
 
-  .events-grid .event-card {
-    min-width: 0;
+  .events-table th,
+  .events-table td {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .event-name-cell strong {
+    font-size: 0.9rem;
+  }
+
+  .event-description {
+    font-size: 0.8rem;
   }
 }
 
-/* Medium screens - Enhanced responsive grid for ManageEvents */
+/* Medium screens - Enhanced responsive table for ManageEvents */
 @media (max-width: 1024px) and (min-width: 769px) {
-  .events-grid {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 1.5rem;
+  .events-table th,
+  .events-table td {
+    padding: 0.75rem;
   }
 }

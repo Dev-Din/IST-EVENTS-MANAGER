@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import { adminAPI } from "../services/api";
+import { formatDate } from "../utils/dateFormatter";
 import "./Reports.css";
 
 const Reports = () => {
@@ -410,10 +411,7 @@ const Reports = () => {
                             )} (${dayData.ticketCount} tickets)`}
                           ></div>
                           <div className="chart-label">
-                            {new Date(dayData._id).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}
+                            {formatDate(dayData._id)}
                           </div>
                         </div>
                       );

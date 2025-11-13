@@ -72,10 +72,11 @@ class MpesaService {
   }
 
   // Generate access token with retry logic and better error handling
-  async getAccessToken(retryCount = 0) {
+  async getAccessToken(retryCount = 0, forceRefresh = false) {
     try {
-      // Check if we have a valid token
+      // Check if we have a valid token (unless forcing refresh)
       if (
+        !forceRefresh &&
         this.accessToken &&
         this.tokenExpiry &&
         Date.now() < this.tokenExpiry
@@ -83,10 +84,18 @@ class MpesaService {
         return this.accessToken;
       }
 
+      // Validate credentials are present
+      if (!this.consumerKey || !this.consumerSecret) {
+        throw new Error(
+          "M-Pesa Consumer Key and Consumer Secret are required. Please check your environment variables."
+        );
+      }
+
       const auth = Buffer.from(
         `${this.consumerKey}:${this.consumerSecret}`
       ).toString("base64");
 
+      console.log("🔄 Requesting new M-Pesa access token...");
       const response = await axios.get(
         `${this.baseURL}/oauth/v1/generate?grant_type=client_credentials`,
         {
@@ -95,8 +104,26 @@ class MpesaService {
             "Content-Type": "application/json",
           },
           timeout: 10000, // 10 second timeout
+          validateStatus: function (status) {
+            return status < 500; // Don't throw for 4xx errors, handle them below
+          },
         }
       );
+
+      // Check for error responses
+      if (response.status !== 200) {
+        const errorMsg =
+          response.data?.errorMessage ||
+          response.data?.error_description ||
+          `HTTP ${response.status}`;
+        throw new Error(`M-Pesa OAuth failed: ${errorMsg}`);
+      }
+
+      if (!response.data || !response.data.access_token) {
+        throw new Error(
+          "Invalid response from M-Pesa OAuth endpoint - no access token received"
+        );
+      }
 
       this.accessToken = response.data.access_token;
       this.tokenExpiry = Date.now() + response.data.expires_in * 1000 - 60000; // 1 minute buffer
@@ -108,6 +135,24 @@ class MpesaService {
         "❌ Error getting access token:",
         error.response?.data || error.message
       );
+
+      // Check for authentication errors (invalid credentials)
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        throw new Error(
+          `M-Pesa authentication failed (${
+            error.response?.status
+          }). Please verify your Consumer Key and Consumer Secret are correct and match your environment (sandbox vs production). Error: ${
+            error.response?.data?.errorMessage || error.message
+          }`
+        );
+      }
+
+      // Check for bad request (often means invalid credentials or wrong environment)
+      if (error.response?.status === 400) {
+        throw new Error(
+          `M-Pesa bad request (400). This usually means your Consumer Key/Secret are invalid, expired, or don't match the environment (sandbox vs production). Please verify your credentials in the Daraja Developer Portal.`
+        );
+      }
 
       // Retry logic for network issues
       if (
@@ -125,7 +170,9 @@ class MpesaService {
 
       throw new Error(
         `Failed to get M-Pesa access token: ${
-          error.response?.data?.errorMessage || error.message
+          error.response?.data?.errorMessage ||
+          error.response?.data?.error_description ||
+          error.message
         }`
       );
     }
@@ -152,11 +199,17 @@ class MpesaService {
     retryCount = 0
   ) {
     try {
-      const accessToken = await this.getAccessToken();
+      // Always get a fresh token for STK Push to avoid expired tokens
+      const accessToken = await this.getAccessToken(0, true); // Force refresh
       const { password, timestamp } = this.generatePassword();
 
       // Format phone number using the service method
       const formattedPhone = this.formatPhoneNumber(phoneNumber);
+
+      // Verify token is valid before proceeding
+      if (!accessToken || accessToken.length < 10) {
+        throw new Error("Invalid access token received from M-Pesa");
+      }
 
       const stkPushData = {
         BusinessShortCode: this.shortcode,
@@ -175,6 +228,13 @@ class MpesaService {
       console.log(
         `📱 Initiating STK Push to ${formattedPhone} for KES ${amount}`
       );
+      console.log("📋 STK Push Request Data:", {
+        BusinessShortCode: this.shortcode,
+        CallBackURL: this.callbackURL,
+        PhoneNumber: formattedPhone,
+        Amount: amount,
+        AccountReference: accountReference,
+      });
 
       const response = await axios.post(
         `${this.baseURL}/mpesa/stkpush/v1/processrequest`,
@@ -185,8 +245,22 @@ class MpesaService {
             "Content-Type": "application/json",
           },
           timeout: 15000, // 15 second timeout
+          validateStatus: function (status) {
+            return status < 500; // Don't throw for 4xx errors, handle them below
+          },
         }
       );
+
+      // Check for error responses
+      if (response.status !== 200) {
+        const errorMsg =
+          response.data?.errorMessage ||
+          response.data?.error_description ||
+          `HTTP ${response.status}`;
+        throw new Error(
+          `STK Push failed: ${errorMsg} (Status: ${response.status})`
+        );
+      }
 
       console.log(
         `✅ STK Push initiated successfully: ${response.data.ResponseDescription}`
@@ -205,6 +279,66 @@ class MpesaService {
         "❌ STK Push error:",
         error.response?.data || error.message
       );
+
+      // Handle invalid access token or forbidden errors - force refresh and retry
+      const errorCode = error.response?.data?.errorCode;
+      const statusCode = error.response?.status;
+      const isInvalidToken =
+        errorCode === "404.001.03" ||
+        errorCode === "401.002.01" ||
+        statusCode === 401 ||
+        statusCode === 403 ||
+        (error.response?.data?.errorMessage &&
+          (error.response.data.errorMessage.includes("Invalid Access Token") ||
+            error.response.data.errorMessage.includes("Forbidden")));
+
+      if (isInvalidToken && retryCount < 2) {
+        console.log(
+          `🔄 Authentication error (${statusCode}) detected, forcing token refresh...`
+        );
+        // Force token refresh by clearing current token
+        this.accessToken = null;
+        this.tokenExpiry = null;
+
+        // Wait a moment before retrying
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        console.log(
+          `🔄 Retrying STK Push with fresh token (attempt ${retryCount + 1})`
+        );
+        return this.initiateSTKPush(
+          phoneNumber,
+          amount,
+          accountReference,
+          transactionDesc,
+          retryCount + 1
+        );
+      }
+
+      // Handle 403 Forbidden specifically
+      if (statusCode === 403) {
+        console.error("❌ M-Pesa 403 Forbidden Error Details:");
+        console.error("   Error Code:", errorCode);
+        console.error("   Error Message:", error.response?.data?.errorMessage);
+        console.error("   Request Data:", {
+          BusinessShortCode: this.shortcode,
+          CallBackURL: this.callbackURL,
+          PhoneNumber: formattedPhone,
+        });
+
+        return {
+          success: false,
+          error: `M-Pesa access forbidden (403). This usually means:
+1. Your Consumer Key/Secret don't have STK Push permissions
+2. Your shortcode/passkey combination is incorrect
+3. Your callback URL is not whitelisted
+4. Your app is not approved for STK Push in the Daraja portal
+
+Please verify your credentials and app permissions in the Daraja Developer Portal.`,
+          errorCode: errorCode || "403",
+          errorMessage: error.response?.data?.errorMessage || "Forbidden",
+        };
+      }
 
       // Retry logic for network issues or temporary failures
       if (
@@ -245,12 +379,13 @@ class MpesaService {
 
       // Handle specific M-Pesa errors
       const errorMessage = error.response?.data?.errorMessage || error.message;
-      const errorCode = error.response?.data?.errorCode || error.code;
+      const finalErrorCode =
+        errorCode || error.response?.data?.errorCode || error.code;
 
       return {
         success: false,
-        error: `STK Push failed: ${errorMessage} (Code: ${errorCode})`,
-        errorCode: errorCode,
+        error: `STK Push failed: ${errorMessage} (Code: ${finalErrorCode})`,
+        errorCode: finalErrorCode,
         errorMessage: errorMessage,
       };
     }
@@ -351,28 +486,47 @@ class MpesaService {
 
   // Validate phone number format - only allow 2547XXXXXXXX format
   validatePhoneNumber(phoneNumber) {
+    if (!phoneNumber) {
+      return false;
+    }
+
     const cleaned = phoneNumber.replace(/\D/g, "");
 
-    // Only allow 2547XXXXXXXX format (best practice for M-Pesa)
-    const mpesaPattern = /^2547\d{8}$/;
-    return mpesaPattern.test(cleaned);
+    // Allow Safaricom numbers that start with 7 (07x/7xx) or 1 (01x/1xx)
+    const canonicalPattern = /^254(7|1)\d{8}$/;
+    return canonicalPattern.test(cleaned);
   }
 
   // Format phone number for M-Pesa - only accept 2547XXXXXXXX format
   formatPhoneNumber(phoneNumber) {
-    const cleaned = phoneNumber.replace(/\D/g, "");
-
-    // Only allow 2547XXXXXXXX format (best practice for M-Pesa)
-    const mpesaPattern = /^2547\d{8}$/;
-
-    if (mpesaPattern.test(cleaned)) {
-      return cleaned;
+    if (!phoneNumber) {
+      throw new Error(
+        "Invalid M-Pesa phone number format. Must be 2547XXXXXXXX or 2541XXXXXXXX."
+      );
     }
 
-    // If invalid format, throw error instead of using fallback
-    throw new Error(
-      "Invalid M-Pesa phone number format. Must be 2547XXXXXXXX (e.g., 254712345678)"
-    );
+    const cleaned = phoneNumber.replace(/\D/g, "");
+
+    // Support common Safaricom number formats: 2547/2541, 07/01, 7/1, +2547/+2541
+    const convertiblePattern = /^(?:254|0)?(7|1)\d{8}$/;
+
+    if (!convertiblePattern.test(cleaned)) {
+      throw new Error(
+        "Invalid M-Pesa phone number format. Use formats like 254712345678 or 254112345678."
+      );
+    }
+
+    let subscriberPortion;
+
+    if (cleaned.startsWith("254")) {
+      subscriberPortion = cleaned.slice(3);
+    } else if (cleaned.startsWith("0")) {
+      subscriberPortion = cleaned.slice(1);
+    } else {
+      subscriberPortion = cleaned;
+    }
+
+    return `254${subscriberPortion}`;
   }
 
   // Test M-Pesa connection

@@ -132,6 +132,11 @@ EventSchema.virtual("isAvailable").get(function () {
   return this.status === "published" && this.availableTickets > 0;
 });
 
+// Virtual to alias title as name for frontend compatibility
+EventSchema.virtual("name").get(function () {
+  return this.title;
+});
+
 // Pre-save middleware to update available tickets
 EventSchema.pre("save", function (next) {
   if (this.isNew) {

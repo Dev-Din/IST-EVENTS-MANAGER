@@ -178,15 +178,18 @@ MPESA_CONSUMER_KEY=vJwBhoK0r1OL8YwJ4HqBBiXLA6BlssZBQSaRhMAeUyRyjD8A
 MPESA_CONSUMER_SECRET=kueOiHHw8AsXEF0iaGFGSJStGEJvsszTEUOAaXagviAd7wfJL0kGhma3CAmuBXck
 MPESA_SHORTCODE=174379
 MPESA_PASSKEY=bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919
+MPESA_CALLBACK_URL=https://boreal-etta-unfuddled.ngrok-free.dev/api/payments/mpesa/callback
 ```
 
 ### Callback URL Setup
 
-For testing, use ngrok:
+For testing, use ngrok (current sandbox tunnel already configured):
 
 ```bash
-ngrok http 5000
-# Update MPESA_CALLBACK_URL with ngrok URL
+# ngrok already running at:
+# https://boreal-etta-unfuddled.ngrok-free.dev
+# Callback endpoint:
+# https://boreal-etta-unfuddled.ngrok-free.dev/api/payments/mpesa/callback
 ```
 
 ## 📊 Database Schema

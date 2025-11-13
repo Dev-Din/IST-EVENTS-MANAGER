@@ -11,6 +11,8 @@ const MyTickets = () => {
   const [error, setError] = useState("");
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketDownload, setShowTicketDownload] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchMyTickets();
@@ -20,25 +22,38 @@ const MyTickets = () => {
     try {
       setLoading(true);
       const response = await ticketsAPI.getMyTickets();
-      setTickets(response.data.data || []);
+      const ticketsData = response.data.data || [];
+      // Filter out tickets with null/undefined events
+      const validTickets = ticketsData.filter(
+        (ticket) => ticket && ticket.event && ticket.event !== null
+      );
+      setTickets(validTickets);
       setError("");
     } catch (error) {
       console.error("Error fetching tickets:", error);
       setError("Failed to load your tickets. Please try again later.");
+      setTickets([]);
     } finally {
       setLoading(false);
     }
   };
 
   const formatDate = (dateString) => {
-    const options = {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    };
-    return new Date(dateString).toLocaleDateString("en-US", options);
+    if (!dateString) {
+      return "Date to be confirmed";
+    }
+    try {
+      const options = {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      };
+      return new Date(dateString).toLocaleDateString("en-US", options);
+    } catch (error) {
+      return "Invalid date";
+    }
   };
 
   const formatPrice = (price) => {
@@ -49,11 +64,29 @@ const MyTickets = () => {
   };
 
   const isEventPast = (dateString) => {
-    return new Date(dateString) < new Date();
+    if (!dateString) {
+      return false;
+    }
+    try {
+      const eventDate = new Date(dateString);
+      if (isNaN(eventDate.getTime())) {
+        return false;
+      }
+      return eventDate < new Date();
+    } catch (error) {
+      return false;
+    }
   };
 
   const generateTicketId = (ticket) => {
-    return `TK-${ticket._id.slice(-8).toUpperCase()}`;
+    if (!ticket || !ticket._id) {
+      return "TK-UNKNOWN";
+    }
+    try {
+      return `TK-${ticket._id.slice(-8).toUpperCase()}`;
+    } catch (error) {
+      return "TK-UNKNOWN";
+    }
   };
 
   const handleDownloadTicket = (ticket) => {
@@ -65,6 +98,12 @@ const MyTickets = () => {
     setSelectedTicket(null);
     setShowTicketDownload(false);
   };
+
+  // Pagination logic
+  const totalPages = Math.ceil(tickets.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTickets = tickets.slice(startIndex, endIndex);
 
   if (loading) {
     return <Loading message="Loading your tickets..." />;
@@ -115,7 +154,9 @@ const MyTickets = () => {
                   <span className="number">
                     {
                       tickets.filter(
-                        (ticket) => !isEventPast(ticket.event.date)
+                        (ticket) =>
+                          ticket?.event?.date &&
+                          !isEventPast(ticket.event.date)
                       ).length
                     }
                   </span>
@@ -128,7 +169,7 @@ const MyTickets = () => {
                         (total, ticket) =>
                           total +
                           (ticket.totalAmount ||
-                            (ticket.unitPrice || ticket.event.price || 0) *
+                            (ticket.unitPrice || ticket?.event?.price || 0) *
                               (ticket.quantity || 1)),
                         0
                       )
@@ -140,118 +181,147 @@ const MyTickets = () => {
             </div>
 
             <div className="tickets-list">
-              {tickets.map((ticket) => (
-                <div
-                  key={ticket._id}
-                  data-ticket-id={ticket._id}
-                  className={`ticket-card ${
-                    isEventPast(ticket.event.date) ? "past-event" : ""
-                  }`}
-                >
-                  <div className="ticket-header">
-                    <div className="ticket-info">
-                      <h3 className="event-name">{ticket.event.title}</h3>
-                      <span className="ticket-id">
-                        Ticket ID: {generateTicketId(ticket)}
-                      </span>
+              {paginatedTickets.map((ticket) => {
+                const event = ticket?.event;
+                const eventDate = event?.date || null;
+
+                return (
+                  <div
+                    key={ticket._id}
+                    data-ticket-id={ticket._id}
+                    className={`ticket-card ${
+                      eventDate && isEventPast(eventDate) ? "past-event" : ""
+                    }`}
+                  >
+                    <div className="ticket-header">
+                      <div className="ticket-info">
+                        <h3 className="event-name">
+                          {event?.title || event?.name || "Unnamed Event"}
+                        </h3>
+                        <span className="ticket-id">
+                          Ticket ID: {generateTicketId(ticket)}
+                        </span>
+                      </div>
+                      <div className="ticket-status">
+                        {eventDate && isEventPast(eventDate) ? (
+                          <span className="status past">
+                            <i className="fas fa-clock"></i>
+                            Past Event
+                          </span>
+                        ) : (
+                          <span className="status upcoming">
+                            <i className="fas fa-calendar-check"></i>
+                            Upcoming
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="ticket-status">
-                      {isEventPast(ticket.event.date) ? (
-                        <span className="status past">
-                          <i className="fas fa-clock"></i>
-                          Past Event
-                        </span>
-                      ) : (
-                        <span className="status upcoming">
-                          <i className="fas fa-calendar-check"></i>
-                          Upcoming
-                        </span>
+
+                    <div className="ticket-details">
+                      <div className="detail-grid">
+                        <div className="detail-item">
+                          <i className="fas fa-calendar"></i>
+                          <div>
+                            <span className="label">Date & Time</span>
+                            <span className="value">
+                              {formatDate(eventDate)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="detail-item">
+                          <i className="fas fa-map-marker-alt"></i>
+                          <div>
+                            <span className="label">Location</span>
+                            <span className="value">
+                              {event?.location || "TBA"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="detail-item">
+                          <i className="fas fa-money-bill-wave"></i>
+                          <div>
+                            <span className="label">Price Paid</span>
+                            <span className="value">
+                              {formatPrice(
+                                ticket.totalAmount ||
+                                  (ticket.unitPrice || event?.price || 0) *
+                                    (ticket.quantity || 1)
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="detail-item">
+                          <i className="fas fa-shopping-cart"></i>
+                          <div>
+                            <span className="label">Purchased On</span>
+                            <span className="value">
+                              {ticket.purchaseDate
+                                ? new Date(
+                                    ticket.purchaseDate
+                                  ).toLocaleDateString("en-US")
+                                : "Unknown date"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {event?.description && (
+                        <div className="event-description">
+                          <p>{event.description}</p>
+                        </div>
                       )}
                     </div>
-                  </div>
 
-                  <div className="ticket-details">
-                    <div className="detail-grid">
-                      <div className="detail-item">
-                        <i className="fas fa-calendar"></i>
-                        <div>
-                          <span className="label">Date & Time</span>
-                          <span className="value">
-                            {formatDate(ticket.event.date)}
-                          </span>
-                        </div>
-                      </div>
+                    <div className="ticket-actions">
+                      {event?._id && (
+                        <Link
+                          to={`/events/${event._id}`}
+                          className="btn btn-outline"
+                        >
+                          <i className="fas fa-info-circle"></i>
+                          View Event Details
+                        </Link>
+                      )}
 
-                      <div className="detail-item">
-                        <i className="fas fa-map-marker-alt"></i>
-                        <div>
-                          <span className="label">Location</span>
-                          <span className="value">{ticket.event.location}</span>
-                        </div>
-                      </div>
-
-                      <div className="detail-item">
-                        <i className="fas fa-money-bill-wave"></i>
-                        <div>
-                          <span className="label">Price Paid</span>
-                          <span className="value">
-                            {formatPrice(
-                              ticket.totalAmount ||
-                                (ticket.unitPrice || ticket.event.price || 0) *
-                                  (ticket.quantity || 1)
-                            )}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="detail-item">
-                        <i className="fas fa-shopping-cart"></i>
-                        <div>
-                          <span className="label">Purchased On</span>
-                          <span className="value">
-                            {new Date(ticket.purchaseDate).toLocaleDateString(
-                              "en-US"
-                            )}
-                          </span>
-                        </div>
-                      </div>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => handleDownloadTicket(ticket)}
+                      >
+                        <i className="fas fa-download"></i>
+                        Download Ticket
+                      </button>
                     </div>
 
-                    {ticket.event.description && (
-                      <div className="event-description">
-                        <p>{ticket.event.description}</p>
+                    {/* QR Code placeholder */}
+                    <div className="ticket-qr">
+                      <div className="qr-placeholder">
+                        <i className="fas fa-qrcode"></i>
+                        <span>QR Code</span>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="ticket-actions">
-                    <Link
-                      to={`/events/${ticket.event._id}`}
-                      className="btn btn-outline"
-                    >
-                      <i className="fas fa-info-circle"></i>
-                      View Event Details
-                    </Link>
-
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => handleDownloadTicket(ticket)}
-                    >
-                      <i className="fas fa-download"></i>
-                      Download Ticket
-                    </button>
-                  </div>
-
-                  {/* QR Code placeholder */}
-                  <div className="ticket-qr">
-                    <div className="qr-placeholder">
-                      <i className="fas fa-qrcode"></i>
-                      <span>QR Code</span>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+
+            {tickets.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={tickets.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                showPageInfo={true}
+                showItemsPerPage={true}
+                onItemsPerPageChange={(newItemsPerPage) => {
+                  setItemsPerPage(newItemsPerPage);
+                  setCurrentPage(1);
+                }}
+              />
+            )}
           </>
         )}
       </div>

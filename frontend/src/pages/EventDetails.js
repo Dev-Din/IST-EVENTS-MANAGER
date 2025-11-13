@@ -81,7 +81,22 @@ const EventDetails = () => {
   };
 
   const getEventImage = () => {
-    return event?.image;
+    if (!event?.image) {
+      return null;
+    }
+    
+    // If image is already a full URL, return it as is
+    if (event.image.startsWith("http://") || event.image.startsWith("https://")) {
+      return event.image;
+    }
+    
+    // If image is just a filename, prepend /uploads/ to it
+    // The proxy will forward it to the backend
+    if (event.image.startsWith("/")) {
+      return event.image;
+    }
+    
+    return `/uploads/${event.image}`;
   };
 
   if (loading) {
@@ -173,7 +188,7 @@ const EventDetails = () => {
                 <i className="fas fa-user-circle"></i>
                 Organized by{" "}
                 <strong>
-                  {event.createdBy.username || "LegitEvents Admin"}
+                  {(event.createdBy.username || "Legit Events").replace(/ Admin$/, "")}
                 </strong>
               </div>
             )}

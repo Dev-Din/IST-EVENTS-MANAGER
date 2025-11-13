@@ -3,6 +3,7 @@ import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import Modal from "../components/Modal";
 import { adminAPI } from "../services/api";
+import { formatDate } from "../utils/dateFormatter";
 import "./ManageUsers.css";
 
 const ManageSubAdmins = () => {
@@ -196,13 +197,6 @@ const ManageSubAdmins = () => {
     });
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   if (loading) {
     return <Loading message="Loading sub-admins..." />;

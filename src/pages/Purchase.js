@@ -4,6 +4,7 @@ import { useAuth } from "../App";
 import Loading from "../components/Loading";
 import PaymentConfirmationModal from "../components/PaymentConfirmationModal";
 import { eventsAPI, ticketsAPI } from "../services/api";
+import { formatDate, formatDateTime } from "../utils/dateFormatter";
 import "./Purchase.css";
 
 const Purchase = () => {
@@ -102,16 +103,6 @@ const Purchase = () => {
     }).format(price);
   };
 
-  const formatDate = (dateString) => {
-    const options = {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    };
-    return new Date(dateString).toLocaleDateString("en-US", options);
-  };
 
   if (loading) {
     return <Loading message="Loading event details..." />;
@@ -152,7 +143,7 @@ const Purchase = () => {
                 </div>
                 <div className="info-row">
                   <span className="label">Date:</span>
-                  <span className="value">{formatDate(event.date)}</span>
+                  <span className="value">{formatDateTime(event.date)}</span>
                 </div>
                 <div className="info-row">
                   <span className="label">Location:</span>
@@ -226,7 +217,7 @@ const Purchase = () => {
               <div className="event-details">
                 <div className="detail-item">
                   <i className="fas fa-calendar"></i>
-                  <span>{formatDate(event.date)}</span>
+                  <span>{formatDateTime(event.date)}</span>
                 </div>
                 <div className="detail-item">
                   <i className="fas fa-map-marker-alt"></i>

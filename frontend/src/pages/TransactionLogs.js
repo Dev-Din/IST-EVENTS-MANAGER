@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+import Pagination from "../components/Pagination";
 import { paymentsAPI } from "../services/api";
 import { formatDate, formatTime } from "../utils/dateFormatter";
 import "./TransactionLogs.css";
@@ -8,6 +9,8 @@ const TransactionLogs = () => {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -753,22 +756,24 @@ const TransactionLogs = () => {
           <div className="recent-transactions">
             <h3>Recent Transactions</h3>
             {getFilteredTransactions(summary.recentTransactions).length > 0 ? (
-              <div className="transactions-table-container">
-                <table className="transactions-table">
-                  <thead>
-                    <tr>
-                      <th>No.</th>
-                      <th>Date</th>
-                      <th>Transaction ID</th>
-                      <th>M-Pesa Receipt</th>
-                      <th>Status</th>
-                      <th>Phone Number</th>
-                      <th>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getFilteredTransactions(summary.recentTransactions).map(
-                      (txn, index) => (
+              <>
+                <div className="transactions-table-container">
+                  <table className="transactions-table">
+                    <thead>
+                      <tr>
+                        <th>No.</th>
+                        <th>Date</th>
+                        <th>Transaction ID</th>
+                        <th>M-Pesa Receipt</th>
+                        <th>Status</th>
+                        <th>Phone Number</th>
+                        <th>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {getFilteredTransactions(summary.recentTransactions)
+                        .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                        .map((txn, index) => (
                         <tr key={txn.id} className="transaction-row">
                           <td className="transaction-number">{index + 1}</td>
                           <td className="transaction-date">
@@ -803,11 +808,28 @@ const TransactionLogs = () => {
                             KES {txn.data.amount}
                           </td>
                         </tr>
-                      )
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {getFilteredTransactions(summary.recentTransactions).length > 0 && (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(getFilteredTransactions(summary.recentTransactions).length / itemsPerPage)}
+                    totalItems={getFilteredTransactions(summary.recentTransactions).length}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setCurrentPage}
+                    showPageInfo={true}
+                    showItemsPerPage={true}
+                    onItemsPerPageChange={(newItemsPerPage) => {
+                      setItemsPerPage(newItemsPerPage);
+                      setCurrentPage(1);
+                    }}
+                  />
+                )}
+              </>
             ) : (
               <p className="no-data">
                 {Object.values(filters).some((filter) => filter)
