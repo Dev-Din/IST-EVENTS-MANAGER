@@ -1,6 +1,10 @@
 /* Home Page Styles */
 .home-page {
   min-height: calc(100vh - 70px);
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* Hero Section */
@@ -9,9 +13,11 @@
   background-position: center center;
   background-repeat: no-repeat;
   background-attachment: scroll;
-
   color: var(--white);
-  padding: var(--spacing-3xl) 0;
+  padding: 0;
+  margin: 0;
+  margin-top: -70px;
+  padding-top: 70px;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -150,12 +156,18 @@
 /* Events Section */
 .events-section {
   padding: var(--spacing-2xl) 0;
+  padding-right: 0;
   background: var(--white);
+  margin: 0;
+  width: 100%;
 }
 
 .events-section .container {
-  padding: 0 1rem;
+  padding: 0;
+  padding-left: 1rem;
   max-width: 100%;
+  margin: 0;
+  width: 100%;
 }
 
 .section-header {
@@ -294,7 +306,18 @@
   background: var(--gray-900);
   color: var(--white);
   padding: var(--spacing-3xl) 0;
+  padding-right: 0;
   text-align: center;
+  margin: 0;
+  width: 100%;
+}
+
+.cta-section .container {
+  padding: 0;
+  padding-left: 1rem;
+  margin: 0;
+  max-width: 100%;
+  width: 100%;
 }
 
 .cta-section h2 {
@@ -333,7 +356,9 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .hero-section {
-    padding: var(--spacing-2xl) 0;
+    padding: 0;
+    margin-top: -60px;
+    padding-top: 60px;
     min-height: 50vh;
     background-position: center center;
   }

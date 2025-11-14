@@ -1,0 +1,301 @@
+/* Client Navbar Styles - Top Navigation */
+.client-navbar.top-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: var(--white);
+  box-shadow: var(--shadow-md);
+  z-index: 1000;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.navbar-container {
+  max-width: 100%;
+  margin: 0;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+  width: 100%;
+  position: relative;
+}
+
+/* Navbar Sections */
+.navbar-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.navbar-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  gap: 0.75rem;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  min-width: 0;
+  margin-left: auto;
+}
+
+/* Logo */
+.nav-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.nav-logo:hover {
+  text-decoration: none;
+  transform: scale(1.05);
+}
+
+.nav-logo-img {
+  height: 45px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.nav-logo-img:not([src]),
+.nav-logo-img[src=""],
+.nav-logo-img[src*="undefined"] {
+  display: none;
+}
+
+/* Navigation Menu - Now handled by navbar-center */
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  color: var(--gray-800);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+  border-radius: var(--border-radius);
+  font-size: 0.95rem;
+  border: 1px solid transparent;
+  background: var(--gray-50);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link:hover {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  text-decoration: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.nav-link.active {
+  background: var(--primary-color);
+  color: var(--white);
+  font-weight: 600;
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.nav-link i {
+  font-size: 1rem;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.nav-link span {
+  white-space: nowrap;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+/* Register link styles - removed as register is no longer in center nav */
+
+.nav-link.logout-btn {
+  color: var(--danger-color);
+  background: rgba(220, 53, 69, 0.1);
+  border-color: rgba(220, 53, 69, 0.3);
+}
+
+.nav-link.logout-btn:hover {
+  background: rgba(220, 53, 69, 0.2);
+  color: var(--danger-color);
+  border-color: var(--danger-color);
+  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Mobile Toggle */
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  cursor: pointer;
+  padding: 0.5rem;
+  background: transparent;
+  border: none;
+  gap: 4px;
+}
+
+/* Ensure navbar sections are always visible and horizontal on desktop */
+@media (min-width: 769px) {
+  .navbar-center {
+    display: flex !important;
+    flex-direction: row !important;
+    position: absolute !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  
+  .nav-toggle {
+    display: none !important;
+  }
+}
+
+.bar {
+  width: 25px;
+  height: 3px;
+  background: var(--gray-700);
+  transition: var(--transition);
+  border-radius: 2px;
+}
+
+.nav-toggle.active .bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.nav-toggle.active .bar:nth-child(2) {
+  opacity: 0;
+}
+
+.nav-toggle.active .bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .navbar-container {
+    padding: 0 1rem;
+  }
+
+  .nav-toggle {
+    display: flex;
+  }
+
+  .navbar-center {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    transform: none;
+    background: var(--white);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem 0;
+    box-shadow: var(--shadow-lg);
+    border-top: 1px solid var(--gray-200);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    gap: 0;
+  }
+
+  .navbar-center.active {
+    max-height: 500px;
+    padding: 1rem 0;
+  }
+
+  .navbar-center .nav-link {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border-radius: 0;
+    justify-content: flex-start;
+    border-left: 3px solid transparent;
+  }
+
+  .navbar-center .nav-link:hover,
+  .navbar-center .nav-link.active {
+    border-left-color: var(--primary-color);
+    background: var(--gray-50);
+  }
+
+  .nav-logo {
+    margin-right: 0;
+  }
+
+  .nav-logo-img {
+    height: 40px;
+  }
+}
+
+/* Small screen optimizations */
+@media (max-width: 480px) {
+  .navbar-container {
+    padding: 0 0.75rem;
+    height: 60px;
+  }
+
+  .nav-logo-img {
+    height: 35px;
+  }
+
+  .nav-link {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Focus states for accessibility */
+.nav-link:focus,
+.nav-toggle:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .client-navbar {
+    border-bottom: 2px solid var(--gray-800);
+  }
+
+  .nav-link {
+    border: 1px solid transparent;
+  }
+
+  .nav-link:hover,
+  .nav-link:focus {
+    border-color: var(--primary-color);
+  }
+}

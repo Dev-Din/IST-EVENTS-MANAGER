@@ -1,0 +1,22 @@
+/* Admin Layout Styles */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.admin-layout .main-content {
+  flex: 1;
+  margin-left: 260px;
+  padding: 2rem;
+  background: var(--gray-50);
+  min-height: 100vh;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .admin-layout .main-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+}
+

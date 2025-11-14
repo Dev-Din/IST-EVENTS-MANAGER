@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Loading from "../components/Loading";
 import TicketDownload from "../components/TicketDownload";
+import Pagination from "../components/Pagination";
 import { ticketsAPI } from "../services/api";
 import "./MyTickets.css";
 

@@ -1,0 +1,20 @@
+/* No Navbar Layout Styles */
+.no-navbar-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.no-navbar-layout .main-content {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  background: var(--gray-50);
+  min-height: 100vh;
+  width: 100%;
+}
+

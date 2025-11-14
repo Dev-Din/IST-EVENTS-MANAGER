@@ -1,0 +1,46 @@
+/* Client Layout Styles */
+.client-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.client-layout .main-content {
+  flex: 1;
+  margin: 0;
+  margin-top: 70px;
+  padding: 0;
+  background: var(--gray-50);
+  min-height: calc(100vh - 70px);
+  width: 100%;
+}
+
+/* Home page specific - remove top margin for hero section */
+.client-layout .main-content .home-page {
+  margin-top: -70px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .client-layout .main-content {
+    margin-top: 60px;
+    padding: 0;
+    min-height: calc(100vh - 60px);
+  }
+
+  .client-layout .main-content .home-page {
+    margin-top: -60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .client-layout .main-content {
+    margin-top: 60px;
+    padding: 0.5rem;
+  }
+}
+

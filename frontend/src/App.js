@@ -1,9 +1,11 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
-import { BrowserRouter as Router } from "react-router-dom";
+import { BrowserRouter as Router, useLocation } from "react-router-dom";
 import "./App.css";
-import Navbar from "./components/Navbar";
 import AppRoutes from "./routes/AppRoutes";
 import api from "./services/api";
+import ClientLayout from "./layouts/ClientLayout";
+import AdminLayout from "./layouts/AdminLayout";
+import NoNavbarLayout from "./layouts/NoNavbarLayout";
 
 // Auth Context
 const AuthContext = createContext();
@@ -119,12 +121,39 @@ function App() {
 
 // Separate component to use useLocation hook
 function AppContent() {
+  const location = useLocation();
+  
+  // Determine which layout to use based on route
+  const isAdminRoute = location.pathname.startsWith("/admin/") || location.pathname.startsWith("/subadmin/");
+  
+  // Special case: admin login page should not have navbar
+  const isAdminLoginPage = location.pathname === "/admin" || location.pathname === "/admin/";
+  
+  if (isAdminLoginPage) {
+    return (
+      <div className="App">
+        <NoNavbarLayout>
+          <AppRoutes />
+        </NoNavbarLayout>
+      </div>
+    );
+  }
+  
+  if (isAdminRoute) {
+    return (
+      <div className="App">
+        <AdminLayout>
+          <AppRoutes />
+        </AdminLayout>
+      </div>
+    );
+  }
+  
   return (
-    <div className="App sidebar-layout">
-      <Navbar />
-      <main className="main-content with-sidebar">
+    <div className="App">
+      <ClientLayout>
         <AppRoutes />
-      </main>
+      </ClientLayout>
     </div>
   );
 }

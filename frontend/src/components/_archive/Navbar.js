@@ -4,7 +4,7 @@ import { useAuth } from "../App";
 import "./Navbar.css";
 
 const Navbar = () => {
-  const { user, isAuthenticated, logout, isAdmin, isSubAdmin } = useAuth();
+  const { isAuthenticated, logout, isAdmin, isSubAdmin } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
