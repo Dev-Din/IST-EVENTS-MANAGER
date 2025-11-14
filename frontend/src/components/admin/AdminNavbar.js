@@ -27,15 +27,18 @@ const AdminNavbar = () => {
     return location.pathname === path;
   };
 
-  // Determine if we're on admin or subadmin routes
+  // Determine if we're on admin or subadmin routes (for logo link)
   const isAdminRoute = location.pathname.startsWith("/admin/");
   const isSubAdminRoute = location.pathname.startsWith("/subadmin/");
+  
+  // Determine dashboard route based on user role
+  const dashboardRoute = isAdmin ? "/admin/dashboard" : "/subadmin/dashboard";
 
   return (
     <aside className={`admin-navbar sidebar ${isMobileMenuOpen ? "active" : ""}`}>
       <div className="sidebar-header">
         <Link 
-          to={isAdminRoute ? "/admin/dashboard" : "/subadmin/dashboard"} 
+          to={dashboardRoute} 
           className="nav-logo"
           onClick={closeMobileMenu}
         >
@@ -53,8 +56,8 @@ const AdminNavbar = () => {
       </div>
 
       <nav className={`nav-menu ${isMobileMenuOpen ? "active" : ""}`}>
-        {/* Super Admin Links */}
-        {isAdminRoute && isAdmin && (
+        {/* Super Admin Links - Show for all admin users regardless of current route */}
+        {isAdmin && (
           <>
             <Link
               to="/admin/dashboard"
@@ -107,8 +110,8 @@ const AdminNavbar = () => {
           </>
         )}
 
-        {/* Sub Admin Links */}
-        {isSubAdminRoute && isSubAdmin && (
+        {/* Sub Admin Links - Show for all sub-admin users regardless of current route */}
+        {isSubAdmin && (
           <>
             <Link
               to="/subadmin/dashboard"

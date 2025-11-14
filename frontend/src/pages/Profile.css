@@ -1,16 +1,18 @@
 .profile-page {
-  min-height: 100vh;
-  background: #f8fafc;
-  padding: 1.5rem 1rem;
+  min-height: auto;
+  background: transparent;
+  padding: 0;
+  width: 100%;
 }
 
 .profile-container {
   max-width: 100%;
-  margin: 0 auto;
+  margin: 0;
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  width: 100%;
 }
 
 /* Profile Header */
@@ -445,7 +447,7 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .profile-page {
-    padding: 1rem 0.5rem;
+    padding: 0;
   }
 
   .profile-header {

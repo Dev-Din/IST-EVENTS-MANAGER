@@ -122,12 +122,17 @@ function App() {
 // Separate component to use useLocation hook
 function AppContent() {
   const location = useLocation();
+  const { isAdmin, isSubAdmin } = useAuth();
   
   // Determine which layout to use based on route
   const isAdminRoute = location.pathname.startsWith("/admin/") || location.pathname.startsWith("/subadmin/");
   
   // Special case: admin login page should not have navbar
   const isAdminLoginPage = location.pathname === "/admin" || location.pathname === "/admin/";
+  
+  // Check if user is admin/sub-admin on profile page
+  const isProfilePage = location.pathname === "/profile";
+  const isAdminOnProfile = isProfilePage && (isAdmin || isSubAdmin);
   
   if (isAdminLoginPage) {
     return (
@@ -139,7 +144,7 @@ function AppContent() {
     );
   }
   
-  if (isAdminRoute) {
+  if (isAdminRoute || isAdminOnProfile) {
     return (
       <div className="App">
         <AdminLayout>
