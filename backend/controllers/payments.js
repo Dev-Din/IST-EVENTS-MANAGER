@@ -282,12 +282,14 @@ const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse("Not enough tickets available", 400));
     }
 
-    // Calculate real ticket amounts for storage
+    // Calculate real ticket amounts for storage (for record keeping only)
     const ticketPrice = event.price * quantity;
     const processingFee = 1.5;
     const realTotalPrice = ticketPrice + processingFee;
 
-    // M-Pesa testing amount (always KES 1 for testing)
+    // M-Pesa sandbox testing amount - ALWAYS KES 1 for sandbox testing
+    // This ensures we never charge the actual ticket price during sandbox testing
+    // Only the testAmount (KES 1) is sent to M-Pesa STK Push
     const testAmount = 1;
 
     // Validate amount
@@ -344,10 +346,12 @@ const initiateMpesaPayment = asyncHandler(async (req, res, next) => {
     }
 
     // Initiate STK Push with improved error handling
+    // IMPORTANT: Always using testAmount (KES 1) for sandbox, NOT the actual ticket price
     console.log(`🚀 Initiating M-Pesa payment for ${phoneNumber}`);
+    console.log(`💰 Charging KES ${testAmount} (sandbox test amount, NOT the actual ticket price of KES ${realTotalPrice})`);
     const stkResult = await mpesaService.initiateSTKPush(
       phoneNumber,
-      testAmount,
+      testAmount, // Always 1 KES for sandbox testing
       accountReference,
       transactionDesc
     );
@@ -1141,7 +1145,8 @@ const testSTKPush = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse("Not enough tickets available", 400));
     }
 
-    // Calculate total price (always KES 1 for testing)
+    // Calculate total price - ALWAYS KES 1 for sandbox testing
+    // This ensures we never charge the actual ticket price during sandbox testing
     const testAmount = 1;
     const totalPrice = testAmount;
 
